@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ConcreteTrack — Gestão de Obras</title>
+<link rel="stylesheet" href="concrete-shared.css">
+<style>
+/* ── LAYOUT ── */
+body { display: flex; min-height: 100vh; overflow: hidden; background: var(--bg-base); }
+
+/* Sidebar */
+.sidebar {
+  width: 220px; flex-shrink: 0; background: var(--bg-1);
+  border-right: 1px solid var(--border); display: flex; flex-direction: column;
+  height: 100vh; position: sticky; top: 0;
+}
+.sidebar-logo {
+  padding: 24px 20px 20px; display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.logo-mark {
+  width: 34px; height: 34px; border-radius: 10px; background: var(--amber);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.logo-mark svg { width: 18px; height: 18px; color: #0c0e14; }
+.logo-text { font-size: 14px; font-weight: 700; color: var(--text); }
+.logo-ver  { font-size: 10px; color: var(--text-3); margin-top: 1px; }
+
+.sidebar-nav { flex: 1; padding: 12px 10px; overflow-y: auto; }
+.nav-section-label { padding: 10px 10px 5px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-3); }
+.nav-item {
+  display: flex; align-items: center; gap: 9px; padding: 8px 10px;
+  border-radius: var(--r-md); border: none; background: none;
+  color: var(--text-2); font-family: inherit; font-size: 13px; font-weight: 500;
+  cursor: pointer; width: 100%; transition: all var(--t-fast); text-align: left;
+}
+.nav-item:hover  { background: var(--surface); color: var(--text); }
+.nav-item.active { background: var(--amber-bg); color: var(--amber); }
+.nav-item svg    { width: 16px; height: 16px; flex-shrink: 0; }
+.nav-badge {
+  margin-left: auto; padding: 1px 6px; border-radius: 10px;
+  font-size: 10px; font-weight: 600; background: var(--amber-bg); color: var(--amber);
+}
+
+.sidebar-footer {
+  padding: 14px 10px; border-top: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px;
+}
+.avatar {
+  width: 32px; height: 32px; border-radius: 50%; background: var(--amber);
+  display: flex; align-items: center; justify-content: center; font-size: 12px;
+  font-weight: 700; color: #0c0e14; flex-shrink: 0;
+}
+.avatar-name { font-size: 12px; font-weight: 500; }
+.avatar-role { font-size: 10px; color: var(--text-3); }
+
+/* Main */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.topbar {
+  height: 56px; flex-shrink: 0; display: flex; align-items: center; gap: 12px;
+  padding: 0 24px; border-bottom: 1px solid var(--border); background: var(--bg-1);
+}
+.topbar-title { font-size: 15px; font-weight: 600; }
+.topbar-sep   { width: 1px; height: 16px; background: var(--border-2); }
+.topbar-search {
+  flex: 1; max-width: 300px; display: flex; align-items: center; gap: 8px;
+  background: var(--bg-2); border: 1px solid var(--border-2); border-radius: var(--r-md);
+  padding: 6px 12px;
+}
+.topbar-search input {
+  background: none; border: none; color: var(--text); font-size: 13px;
+  font-family: inherit; outline: none; flex: 1;
+}
+.topbar-search input::placeholder { color: var(--text-3); }
+.topbar-search svg { width: 14px; height: 14px; color: var(--text-3); }
+
+.content { flex: 1; overflow-y: auto; padding: 24px; }
+.page { display: none; }
+.page.active { display: block; }
+.page-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+.page-header h2 { font-size: 20px; }
+
+/* Dashboard grid */
+.stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 24px; }
+.dash-grid  { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+
+/* Table filter bar */
+.filter-bar {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap;
+}
+.filter-bar .field-select {
+  width: auto; min-width: 140px; padding: 7px 10px; font-size: 12px;
+}
+
+/* Donut chart */
+.donut-wrap { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 16px 0; }
+.donut-legend { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.legend-dot  { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.legend-pct  { margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
+
+/* Bar chart */
+.bar-chart { padding: 8px 0; display: flex; flex-direction: column; gap: 10px; }
+.bar-row { display: flex; align-items: center; gap: 10px; }
+.bar-label { width: 55px; font-size: 11px; color: var(--text-3); text-align: right; font-family: 'IBM Plex Mono', monospace; flex-shrink: 0; }
+.bar-track { flex: 1; height: 18px; background: var(--surface); border-radius: 3px; overflow: hidden; }
+.bar-fill  { height: 100%; background: var(--amber); border-radius: 3px; transition: width 0.8s cubic-bezier(0.4,0,0.2,1); }
+.bar-val   { width: 30px; font-size: 11px; color: var(--text-2); font-family: 'IBM Plex Mono', monospace; flex-shrink: 0; }
+
+/* Traço detail panel */
+.traco-detail {
+  background: var(--bg-3); border: 1px solid var(--amber-border); border-radius: var(--r-lg);
+  padding: 16px; margin-top: 12px;
+}
+.traco-comp-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-top: 12px; }
+.traco-comp { background: var(--surface); border-radius: var(--r-md); padding: 10px; text-align: center; }
+.traco-comp .val { font-size: 18px; font-weight: 700; font-family: 'IBM Plex Mono', monospace; color: var(--amber); }
+.traco-comp .lbl { font-size: 10px; color: var(--text-3); margin-top: 3px; text-transform: uppercase; }
+
+/* Relatório */
+.rel-filters {
+  background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--r-lg);
+  padding: 20px; margin-bottom: 20px; display: grid; grid-template-columns: repeat(3,1fr); gap: 14px;
+}
+.rel-filters .filter-row-full { grid-column: 1/-1; display: flex; gap: 10px; justify-content: flex-end; }
+
+/* Print-friendly modal for PDF preview */
+.pdf-preview {
+  background: #fff; color: #1a1a1a; padding: 40px; max-width: 800px; border-radius: var(--r-lg);
+  font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; line-height: 1.5;
+  max-height: 80vh; overflow-y: auto;
+}
+.pdf-preview h1 { font-size: 18px; color: #1a1a1a; border-bottom: 2px solid #f0a500; padding-bottom: 8px; margin-bottom: 16px; }
+.pdf-preview h2 { font-size: 13px; color: #444; margin: 16px 0 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+.pdf-preview table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+.pdf-preview th { background: #f5f5f5; padding: 7px 10px; text-align: left; font-size: 11px; border-bottom: 1px solid #ddd; }
+.pdf-preview td { padding: 7px 10px; border-bottom: 1px solid #eee; font-size: 11px; }
+.pdf-preview tr:nth-child(even) td { background: #fafafa; }
+.pdf-preview .kv { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.pdf-preview .kv-item { background: #f9f9f9; border-radius: 6px; padding: 10px; }
+.pdf-preview .kv-val  { font-size: 18px; font-weight: 700; color: #f0a500; }
+.pdf-preview .kv-lbl  { font-size: 10px; color: #888; text-transform: uppercase; }
+.pdf-preview .stat-row { display: flex; gap: 16px; flex-wrap: wrap; margin: 12px 0; }
+.pdf-preview .stat-pill {
+  padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600;
+  background: #f0f0f0; color: #333;
+}
+.status-apr  { color: #2ec08a; }
+.status-rep  { color: #f05454; }
+.status-pen  { color: #f0a500; }
+
+@media (max-width: 1200px) { .stats-grid { grid-template-columns: repeat(2,1fr); } }
+@media (max-width: 900px)  { .dash-grid { grid-template-columns: 1fr; } .sidebar { display: none; } }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ SIDEBAR ════════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="8.5" x2="22" y2="8.5"/></svg>
+    </div>
+    <div><div class="logo-text">ConcreteTrack</div><div class="logo-ver">v2.0 • Web</div></div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Visão Geral</div>
+    <button class="nav-item active" onclick="showPage('dashboard')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard
+    </button>
+    <button class="nav-item" onclick="showPage('obras')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+      Obras
+    </button>
+
+    <div class="nav-section-label" style="margin-top:8px">Rastreabilidade</div>
+    <button class="nav-item" onclick="showPage('registros')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Registros
+    </button>
+    <button class="nav-item" onclick="showPage('tracos')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14"/><path d="M4.93 4.93a10 10 0 000 14.14"/></svg>
+      Traços
+    </button>
+    <button class="nav-item" onclick="showPage('pecas')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+      Peças
+    </button>
+
+    <div class="nav-section-label" style="margin-top:8px">Relatórios</div>
+    <button class="nav-item" onclick="showPage('relatorio')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="16" y2="15"/><line x1="8" y1="19" x2="12" y2="19"/></svg>
+      Relatório PDF
+    </button>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="avatar">JS</div>
+    <div><div class="avatar-name">João Silva</div><div class="avatar-role">Eng. Responsável</div></div>
+  </div>
+</aside>
+
+<!-- ═══════════════ MAIN ════════════════ -->
+<main class="main">
+  <div class="topbar">
+    <span class="topbar-title" id="topbar-title">Dashboard</span>
+    <div class="topbar-sep"></div>
+    <div class="topbar-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" placeholder="Buscar obras, registros...">
+    </div>
+    <div class="ml-auto flex gap-2">
+      <button class="btn btn-secondary btn-sm" onclick="loadAll()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+        Atualizar
+      </button>
+      <button class="btn btn-primary btn-sm" id="btn-new" onclick="openNewModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Novo
+      </button>
+    </div>
+  </div>
+
+  <div class="content" id="content">
+
+    <!-- ══ DASHBOARD ══ -->
+    <div class="page active" id="page-dashboard">
+      <div class="stats-grid" id="stats-grid">
+        <div class="stat-card amber skeleton" style="height:90px"></div>
+        <div class="stat-card amber skeleton" style="height:90px"></div>
+        <div class="stat-card amber skeleton" style="height:90px"></div>
+        <div class="stat-card amber skeleton" style="height:90px"></div>
+      </div>
+
+      <div class="dash-grid">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Caminhões por Mês</span>
+            <span class="badge badge-muted">Últimos 12 meses</span>
+          </div>
+          <div class="card-body">
+            <div class="bar-chart" id="bar-chart"></div>
+          </div>
+        </div>
+
+        <div class="flex-col gap-4">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Aprovações</span></div>
+            <div class="card-body">
+              <div class="donut-wrap">
+                <canvas id="donut-canvas" width="120" height="120"></canvas>
+                <div class="donut-legend" id="donut-legend"></div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">Origem do Concreto</span></div>
+            <div class="card-body">
+              <div class="bar-chart" id="origem-chart"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <div class="card-header"><span class="card-title">Obras em Andamento</span></div>
+        <div class="table-wrap">
+          <table class="table" id="dash-obras-table">
+            <thead><tr><th>Obra</th><th>Local</th><th>Caminhões</th><th>Volume m³</th><th>Progresso</th><th>Status</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ OBRAS ══ -->
+    <div class="page" id="page-obras">
+      <div class="page-header">
+        <h2>Obras</h2>
+        <div class="ml-auto">
+          <div class="tabs">
+            <button class="tab-btn active" onclick="filterObras('')">Todas</button>
+            <button class="tab-btn" onclick="filterObras('andamento')">Em Andamento</button>
+            <button class="tab-btn" onclick="filterObras('pausada')">Pausadas</button>
+            <button class="tab-btn" onclick="filterObras('concluida')">Concluídas</button>
+          </div>
+        </div>
+      </div>
+      <div id="obras-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px"></div>
+    </div>
+
+    <!-- ══ REGISTROS ══ -->
+    <div class="page" id="page-registros">
+      <div class="page-header"><h2>Registros de Concreto</h2></div>
+      <div class="filter-bar">
+        <select class="field-select" id="reg-obra-filter" onchange="loadRegistros()">
+          <option value="">Todas as Obras</option>
+        </select>
+        <select class="field-select" id="reg-status-filter" onchange="loadRegistros()">
+          <option value="">Todos os Status</option>
+          <option value="pendente">Pendente</option>
+          <option value="aprovado">Aprovado</option>
+          <option value="reprovado">Reprovado</option>
+        </select>
+        <select class="field-select" id="reg-origem-filter" onchange="loadRegistros()">
+          <option value="">Todas as Origens</option>
+          <option value="0">Usinado</option>
+          <option value="1">Na Obra</option>
+        </select>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Código</th><th>Obra</th><th>Data</th><th>Traço</th><th>FCK</th><th>Slump Proj.</th><th>Slump Obt.</th><th>Volume</th><th>Origem</th><th>Status</th><th>Ações</th></tr></thead>
+            <tbody id="registros-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ TRAÇOS ══ -->
+    <div class="page" id="page-tracos">
+      <div class="page-header">
+        <h2>Base de Dados de Traços</h2>
+        <div class="ml-auto flex gap-2">
+          <div class="tabs">
+            <button class="tab-btn active" onclick="filterTracos(1)">Ativos</button>
+            <button class="tab-btn" onclick="filterTracos(0)">Inativos</button>
+            <button class="tab-btn" onclick="filterTracos('')">Todos</button>
+          </div>
+        </div>
+      </div>
+      <div id="tracos-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px"></div>
+    </div>
+
+    <!-- ══ PEÇAS ══ -->
+    <div class="page" id="page-pecas">
+      <div class="page-header"><h2>Peças</h2></div>
+      <div class="filter-bar">
+        <select class="field-select" id="peca-obra-filter" onchange="loadPecas()"><option value="">Todas as Obras</option></select>
+        <select class="field-select" id="peca-tipo-filter" onchange="loadPecas()">
+          <option value="">Todos os Tipos</option>
+          <option value="pilar">Pilar</option><option value="viga">Viga</option>
+          <option value="laje">Laje</option><option value="fundacao">Fundação</option><option value="outro">Outro</option>
+        </select>
+        <select class="field-select" id="peca-status-filter" onchange="loadPecas()">
+          <option value="">Todos os Status</option>
+          <option value="pendente">Pendente</option><option value="concretada">Concretada</option>
+        </select>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Código</th><th>Tipo</th><th>Pavimento</th><th>Bloco</th><th>Área m²</th><th>Status</th><th>Concretada em</th></tr></thead>
+            <tbody id="pecas-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ RELATÓRIO ══ -->
+    <div class="page" id="page-relatorio">
+      <div class="page-header"><h2>Relatório PDF</h2></div>
+      <div class="rel-filters">
+        <div class="field">
+          <label class="field-label">Obra</label>
+          <select class="field-select" id="rel-obra-sel"><option value="">Todas as Obras</option></select>
+        </div>
+        <div class="field">
+          <label class="field-label">Data Início</label>
+          <input type="date" class="field-input" id="rel-data-ini">
+        </div>
+        <div class="field">
+          <label class="field-label">Data Fim</label>
+          <input type="date" class="field-input" id="rel-data-fim">
+        </div>
+        <div class="field">
+          <label class="field-label">Status</label>
+          <select class="field-select" id="rel-status">
+            <option value="">Todos</option>
+            <option value="aprovado">Aprovado</option>
+            <option value="reprovado">Reprovado</option>
+            <option value="pendente">Pendente</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">Traço</label>
+          <select class="field-select" id="rel-traco"><option value="">Todos os Traços</option></select>
+        </div>
+        <div class="field">
+          <label class="field-label">Origem do Concreto</label>
+          <select class="field-select" id="rel-origem">
+            <option value="">Todas</option>
+            <option value="0">Usinado</option>
+            <option value="1">Feito na Obra</option>
+          </select>
+        </div>
+        <div class="filter-row-full">
+          <button class="btn btn-secondary" onclick="previewRelatorio()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Pré-visualizar
+          </button>
+          <button class="btn btn-primary" onclick="gerarPDF()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Gerar PDF
+          </button>
+        </div>
+      </div>
+      <div id="rel-preview-area"></div>
+    </div>
+
+  </div><!-- /content -->
+</main>
+
+<!-- ══════════ MODALS ══════════ -->
+
+<!-- Modal: Nova Obra -->
+<div class="modal-overlay" id="modal-obra">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="obra-modal-title">Nova Obra</span>
+      <button class="modal-close" onclick="closeModal('modal-obra')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="obra-id-edit">
+      <div class="field-row">
+        <div class="field"><label class="field-label">Nome da Obra *</label><input type="text" class="field-input" id="obra-nome" placeholder="Ex: Residencial Park"></div>
+        <div class="field"><label class="field-label">Responsável</label><input type="text" class="field-input" id="obra-resp" placeholder="Eng. João Silva"></div>
+      </div>
+      <div class="field"><label class="field-label">Localidade</label><input type="text" class="field-input" id="obra-local" placeholder="Belo Horizonte, MG"></div>
+      <div class="field-row">
+        <div class="field"><label class="field-label">Data Início</label><input type="date" class="field-input" id="obra-inicio"></div>
+        <div class="field"><label class="field-label">Previsão Fim</label><input type="date" class="field-input" id="obra-fim"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label class="field-label">Total de Peças</label><input type="number" class="field-input" id="obra-pecas" placeholder="0"></div>
+        <div class="field"><label class="field-label">Status</label>
+          <select class="field-select" id="obra-status">
+            <option value="andamento">Em Andamento</option>
+            <option value="pausada">Pausada</option>
+            <option value="concluida">Concluída</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label class="field-label">Observações</label><textarea class="field-textarea" id="obra-obs" placeholder="Informações adicionais..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-obra')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveObra()">Salvar Obra</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Novo/Editar Traço -->
+<div class="modal-overlay" id="modal-traco">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-header">
+      <span class="modal-title" id="traco-modal-title">Novo Traço</span>
+      <button class="modal-close" onclick="closeModal('modal-traco')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="traco-id-edit">
+      <div class="field-row">
+        <div class="field"><label class="field-label">Código *</label><input type="text" class="field-input" id="traco-codigo" placeholder="T-001"></div>
+        <div class="field"><label class="field-label">FCK (MPa) *</label>
+          <select class="field-select" id="traco-fck">
+            <option value="15">C15</option><option value="20">C20</option><option value="25" selected>C25</option>
+            <option value="30">C30</option><option value="35">C35</option><option value="40">C40</option><option value="50">C50</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label class="field-label">Descrição *</label><input type="text" class="field-input" id="traco-desc" placeholder="Ex: Concreto Estrutural C25 — Pilares"></div>
+      <div class="divider-text">Especificações de Slump</div>
+      <div class="field-row">
+        <div class="field"><label class="field-label">Slump Mínimo (cm)</label><input type="number" step="0.5" class="field-input" id="traco-slump-min" placeholder="8"></div>
+        <div class="field"><label class="field-label">Slump Máximo (cm)</label><input type="number" step="0.5" class="field-input" id="traco-slump-max" placeholder="12"></div>
+      </div>
+      <div class="divider-text">Composição por m³</div>
+      <div class="field-row" style="grid-template-columns:1fr 1fr 1fr 1fr">
+        <div class="field"><label class="field-label">Cimento (kg)</label><input type="number" class="field-input" id="traco-cimento" placeholder="380"></div>
+        <div class="field"><label class="field-label">Água (L)</label><input type="number" class="field-input" id="traco-agua" placeholder="190"></div>
+        <div class="field"><label class="field-label">Areia (kg)</label><input type="number" class="field-input" id="traco-areia" placeholder="780"></div>
+        <div class="field"><label class="field-label">Brita (kg)</label><input type="number" class="field-input" id="traco-brita-kg" placeholder="1000"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label class="field-label">Tipo de Brita</label><input type="text" class="field-input" id="traco-brita-tipo" placeholder="Brita 1"></div>
+        <div class="field"><label class="field-label">Relação Água/Cimento</label><input type="number" step="0.01" class="field-input" id="traco-rac" placeholder="0.50"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label class="field-label">Aditivo</label><input type="text" class="field-input" id="traco-aditivo" placeholder="Plastificante"></div>
+        <div class="field"><label class="field-label">Aditivo (kg/m³)</label><input type="number" step="0.1" class="field-input" id="traco-aditivo-kg" placeholder="1.5"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label class="field-label">Resist. 28 dias (MPa)</label><input type="number" step="0.1" class="field-input" id="traco-res28" placeholder="28.5"></div>
+        <div class="field"><label class="field-label">Norma</label><input type="text" class="field-input" id="traco-norma" value="NBR 12655"></div>
+      </div>
+      <div class="field"><label class="field-label">Observações</label><textarea class="field-textarea" id="traco-obs" placeholder="Notas técnicas, restrições de uso..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-traco')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveTraco()">Salvar Traço</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Preview PDF -->
+<div class="modal-overlay" id="modal-pdf">
+  <div class="modal" style="max-width:860px">
+    <div class="modal-header">
+      <span class="modal-title">Pré-visualização do Relatório</span>
+      <div class="flex gap-2">
+        <button class="btn btn-primary btn-sm" onclick="printPDF()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          Imprimir / Salvar PDF
+        </button>
+        <button class="modal-close" onclick="closeModal('modal-pdf')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="modal-body" style="padding:0">
+      <div id="pdf-content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<script>
+const API = 'http://localhost:3001/api';
+
+// ── TOAST ──────────────────────────────────────────────────────
+function toast(msg, type='success') {
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  el.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>${msg}`;
+  document.getElementById('toast-container').appendChild(el);
+  requestAnimationFrame(()=>el.classList.add('show'));
+  setTimeout(()=>{ el.classList.remove('show'); setTimeout(()=>el.remove(),300); }, 3000);
+}
+
+// ── MODAL ──────────────────────────────────────────────────────
+function openModal(id)  { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+// ── NAVIGATION ─────────────────────────────────────────────────
+const pageMap = {
+  dashboard:'Dashboard', obras:'Obras', registros:'Registros',
+  tracos:'Traços', pecas:'Peças', relatorio:'Relatório PDF'
+};
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById(`page-${name}`).classList.add('active');
+  document.querySelector(`.nav-item[onclick="showPage('${name}')"]`)?.classList.add('active');
+  document.getElementById('topbar-title').textContent = pageMap[name]||name;
+  // Load data for page
+  if (name==='dashboard') loadDashboard();
+  else if (name==='obras') loadObras();
+  else if (name==='registros') loadRegistros();
+  else if (name==='tracos') loadTracos();
+  else if (name==='pecas') loadPecas();
+  else if (name==='relatorio') setupRelatorio();
+}
+
+function openNewModal() {
+  const active = document.querySelector('.page.active').id.replace('page-','');
+  if (active==='obras') { resetObraForm(); openModal('modal-obra'); }
+  else if (active==='tracos') { resetTracoForm(); openModal('modal-traco'); }
+}
+
+// ── HELPERS ────────────────────────────────────────────────────
+async function api(endpoint, opts={}) {
+  const r = await fetch(`${API}${endpoint}`, opts);
+  return r.json();
+}
+function fmtDate(d) { if (!d) return '—'; return new Date(d+'T00:00:00').toLocaleDateString('pt-BR'); }
+function fmtVol(v)  { return v!=null ? `${(+v).toFixed(1)}m³` : '—'; }
+function statusBadge(s) {
+  const m = { aprovado:'green', reprovado:'red', pendente:'amber', andamento:'blue', concluida:'green', pausada:'amber' };
+  const l = { aprovado:'Aprovado', reprovado:'Reprovado', pendente:'Pendente', andamento:'Em Andamento', concluida:'Concluída', pausada:'Pausada' };
+  return `<span class="badge badge-${m[s]||'muted'}">${l[s]||s}</span>`;
+}
+
+// ── LOAD ALL ───────────────────────────────────────────────────
+async function loadAll() {
+  await Promise.all([loadDashboard(), populateObraSelects(), populateTracoSelects()]);
+}
+
+// ── DASHBOARD ──────────────────────────────────────────────────
+async function loadDashboard() {
+  const { data } = await api('/dashboard');
+  if (!data) return;
+
+  const statsHtml = [
+    { label:'Total Obras',    val: data.totalObras,     icon:'🏗️',  cls:'amber' },
+    { label:'Em Andamento',   val: data.obrasAndamento,  icon:'⚙️',  cls:'blue' },
+    { label:'Registros',      val: data.totalCaminhoes,  icon:'🚛',  cls:'green' },
+    { label:'Volume Total m³',val: (+data.totalVolume||0).toFixed(1), icon:'📦', cls:'purple' },
+  ].map(s=>`
+    <div class="stat-card ${s.cls}">
+      <div class="stat-icon ${s.cls}-bg">${s.icon}</div>
+      <div class="stat-value">${s.val}</div>
+      <div class="stat-label">${s.label}</div>
+    </div>
+  `).join('');
+  document.getElementById('stats-grid').innerHTML = statsHtml;
+
+  // Bar chart
+  const bars = (data.camPoMes||[]).slice(0,8).reverse();
+  const maxV = Math.max(1, ...bars.map(b=>b.total));
+  document.getElementById('bar-chart').innerHTML = bars.length
+    ? bars.map(b=>`
+      <div class="bar-row">
+        <span class="bar-label">${b.mes.slice(5)}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${(b.total/maxV*100).toFixed(1)}%"></div></div>
+        <span class="bar-val">${b.total}</span>
+      </div>`).join('')
+    : '<div class="text-faint text-sm">Sem dados ainda</div>';
+
+  // Donut
+  drawDonut(data.aprovacoes||[]);
+
+  // Origem
+  const orig = (data.concreto_origem||[]);
+  const maxO = Math.max(1, ...orig.map(o=>o.total));
+  document.getElementById('origem-chart').innerHTML = orig.length
+    ? orig.map(o=>`
+      <div class="bar-row">
+        <span class="bar-label" style="width:70px;font-size:10px">${o.origem}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${(o.total/maxO*100).toFixed(1)}%;background:var(--blue)"></div></div>
+        <span class="bar-val">${o.total}</span>
+      </div>`).join('')
+    : '<div class="text-faint text-sm">Sem dados</div>';
+
+  // Obras table
+  const obras = await api('/obras?status=andamento&limit=10');
+  const tbody = document.querySelector('#dash-obras-table tbody');
+  tbody.innerHTML = (obras.data?.rows||[]).map(o=>{
+    const prog = o.total_pecas_real>0 ? Math.round(o.pecas_concretadas/o.total_pecas_real*100) : 0;
+    return `<tr>
+      <td><strong>${o.nome}</strong></td>
+      <td class="text-faint">${o.localidade||'—'}</td>
+      <td class="font-mono">${o.total_caminhoes||0}</td>
+      <td class="font-mono">${fmtVol(o.volume_total_m3)}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="flex:1;height:5px;background:var(--surface);border-radius:3px">
+            <div style="height:100%;width:${prog}%;background:var(--green);border-radius:3px"></div>
+          </div>
+          <span class="font-mono text-xs">${prog}%</span>
+        </div>
+      </td>
+      <td>${statusBadge(o.status)}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="6" class="text-faint" style="text-align:center;padding:24px">Nenhuma obra em andamento</td></tr>';
+}
+
+function drawDonut(data) {
+  const canvas = document.getElementById('donut-canvas');
+  const ctx = canvas.getContext('2d');
+  const total = data.reduce((s,d)=>s+d.total,0);
+  if (total===0) { ctx.clearRect(0,0,120,120); return; }
+
+  const colors = { aprovado:'#2ec08a', reprovado:'#f05454', pendente:'#f0a500' };
+  const labels = { aprovado:'Aprovado', reprovado:'Reprovado', pendente:'Pendente' };
+  let angle = -Math.PI/2;
+  ctx.clearRect(0,0,120,120);
+  data.forEach(d=>{
+    const slice = (d.total/total)*Math.PI*2;
+    ctx.beginPath(); ctx.moveTo(60,60);
+    ctx.arc(60,60,50,angle,angle+slice);
+    ctx.closePath(); ctx.fillStyle = colors[d.status]||'#5a637f'; ctx.fill();
+    angle += slice;
+  });
+  ctx.beginPath(); ctx.arc(60,60,30,0,Math.PI*2); ctx.fillStyle='#171b27'; ctx.fill();
+  ctx.textAlign='center'; ctx.fillStyle='#dde2f0'; ctx.font='bold 16px IBM Plex Mono,monospace';
+  ctx.fillText(total,60,65);
+
+  document.getElementById('donut-legend').innerHTML = data.map(d=>`
+    <div class="legend-item">
+      <div class="legend-dot" style="background:${colors[d.status]||'#5a637f'}"></div>
+      <span>${labels[d.status]||d.status}</span>
+      <span class="legend-pct">${d.total} <span class="text-faint">(${Math.round(d.total/total*100)}%)</span></span>
+    </div>`).join('');
+}
+
+// ── OBRAS ──────────────────────────────────────────────────────
+let currentObraFilter = '';
+function filterObras(s) {
+  currentObraFilter = s;
+  document.querySelectorAll('#page-obras .tab-btn').forEach((b,i)=>{
+    b.classList.toggle('active', b.onclick.toString().includes(`'${s||''}'`));
+  });
+  loadObras();
+}
+async function loadObras() {
+  const qs = currentObraFilter ? `?status=${currentObraFilter}` : '';
+  const { data } = await api(`/obras${qs}&limit=50`);
+  const rows = data?.rows||[];
+  document.getElementById('obras-grid').innerHTML = rows.length
+    ? rows.map(o=>{
+        const prog = o.total_pecas_real>0 ? Math.round(o.pecas_concretadas/o.total_pecas_real*100) : 0;
+        return `
+        <div class="card card-hover" style="cursor:default">
+          <div class="card-header">
+            <div>
+              <div class="card-title">${o.nome}</div>
+              <div class="text-xs text-faint mt-1">${o.localidade||'—'} • ${o.responsavel||'—'}</div>
+            </div>
+            ${statusBadge(o.status)}
+          </div>
+          <div class="card-body">
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
+              <div style="text-align:center">
+                <div class="font-mono font-700 text-amber" style="font-size:20px">${o.total_caminhoes||0}</div>
+                <div class="text-xs text-faint">Registros</div>
+              </div>
+              <div style="text-align:center">
+                <div class="font-mono font-700 text-green" style="font-size:20px">${o.pecas_concretadas||0}</div>
+                <div class="text-xs text-faint">Concretadas</div>
+              </div>
+              <div style="text-align:center">
+                <div class="font-mono font-700 text-blue" style="font-size:20px">${fmtVol(o.volume_total_m3)}</div>
+                <div class="text-xs text-faint">Volume</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+              <div style="flex:1;height:6px;background:var(--surface);border-radius:3px">
+                <div style="height:100%;width:${prog}%;background:var(--green);border-radius:3px;transition:width 0.8s"></div>
+              </div>
+              <span class="font-mono text-xs">${prog}%</span>
+            </div>
+            <div class="flex gap-2">
+              <button class="btn btn-secondary btn-sm" onclick="editObra('${o.id}')">Editar</button>
+              <button class="btn btn-ghost btn-sm" onclick="deleteObra('${o.id}','${o.nome}')">Excluir</button>
+            </div>
+          </div>
+        </div>`;
+      }).join('')
+    : `<div class="empty-state" style="grid-column:1/-1">
+        <div class="empty-state-icon">🏗️</div>
+        <h3>Nenhuma obra encontrada</h3>
+        <p>Crie uma nova obra para começar</p>
+      </div>`;
+}
+
+function resetObraForm() {
+  document.getElementById('obra-id-edit').value='';
+  ['obra-nome','obra-resp','obra-local','obra-inicio','obra-fim','obra-obs'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('obra-pecas').value=0;
+  document.getElementById('obra-status').value='andamento';
+  document.getElementById('obra-modal-title').textContent='Nova Obra';
+}
+
+async function editObra(id) {
+  const { data } = await api(`/obras/${id}`);
+  document.getElementById('obra-id-edit').value = id;
+  document.getElementById('obra-nome').value  = data.nome||'';
+  document.getElementById('obra-resp').value  = data.responsavel||'';
+  document.getElementById('obra-local').value = data.localidade||'';
+  document.getElementById('obra-inicio').value= data.data_inicio||'';
+  document.getElementById('obra-fim').value   = data.data_prev_fim||'';
+  document.getElementById('obra-pecas').value = data.total_pecas||0;
+  document.getElementById('obra-status').value= data.status||'andamento';
+  document.getElementById('obra-obs').value   = data.observacoes||'';
+  document.getElementById('obra-modal-title').textContent = 'Editar Obra';
+  openModal('modal-obra');
+}
+
+async function saveObra() {
+  const id = document.getElementById('obra-id-edit').value;
+  const body = {
+    nome:         document.getElementById('obra-nome').value.trim(),
+    responsavel:  document.getElementById('obra-resp').value,
+    localidade:   document.getElementById('obra-local').value,
+    data_inicio:  document.getElementById('obra-inicio').value,
+    data_prev_fim:document.getElementById('obra-fim').value,
+    total_pecas:  +document.getElementById('obra-pecas').value||0,
+    status:       document.getElementById('obra-status').value,
+    observacoes:  document.getElementById('obra-obs').value,
+  };
+  if (!body.nome) { toast('Nome da obra é obrigatório','error'); return; }
+  const r = id
+    ? await api(`/obras/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) })
+    : await api('/obras', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+  if (r.ok) { toast(id?'Obra atualizada!':'Obra criada!'); closeModal('modal-obra'); loadObras(); populateObraSelects(); }
+  else toast(r.error||'Erro ao salvar','error');
+}
+
+async function deleteObra(id, nome) {
+  if (!confirm(`Excluir a obra "${nome}"? Esta ação não pode ser desfeita.`)) return;
+  await api(`/obras/${id}`, { method:'DELETE' });
+  toast('Obra excluída'); loadObras();
+}
+
+// ── REGISTROS ─────────────────────────────────────────────────
+async function loadRegistros() {
+  const obraId = document.getElementById('reg-obra-filter').value;
+  const status = document.getElementById('reg-status-filter').value;
+  const origem = document.getElementById('reg-origem-filter').value;
+  let qs = '?limit=100';
+  if (obraId) qs += `&obra_id=${obraId}`;
+  if (status) qs += `&status=${status}`;
+
+  const { data } = await api(`/caminhoes${qs}`);
+  let rows = data?.rows||[];
+  if (origem!=='') rows = rows.filter(r=>String(r.concreto_obra)==origem);
+
+  document.getElementById('registros-tbody').innerHTML = rows.length
+    ? rows.map(c=>`
+      <tr>
+        <td class="col-mono">${c.codigo||'—'}</td>
+        <td>${c.obra_nome||'—'}</td>
+        <td class="font-mono">${fmtDate(c.data_registro)}</td>
+        <td class="text-xs text-amber">${c.traco_codigo||'—'}</td>
+        <td class="font-mono">C${c.fck||'—'}</td>
+        <td class="font-mono">${c.slump_projeto!=null?c.slump_projeto+'cm':'—'}</td>
+        <td class="font-mono ${c.slump_obtido!=null&&c.slump_projeto!=null&&Math.abs(c.slump_obtido-c.slump_projeto)>2?'text-red':'text-green'}">${c.slump_obtido!=null?c.slump_obtido+'cm':'—'}</td>
+        <td class="font-mono">${fmtVol(c.volume_m3)}</td>
+        <td>${c.concreto_obra?'<span class="badge badge-purple">Na Obra</span>':'<span class="badge badge-muted">Usinado</span>'}</td>
+        <td>${statusBadge(c.status)}</td>
+        <td>
+          <div class="flex gap-2">
+            ${c.status==='pendente'?`<button class="btn btn-success btn-sm" onclick="aprovarCam('${c.id}','aprovado')">✓</button>
+            <button class="btn btn-danger btn-sm" onclick="aprovarCam('${c.id}','reprovado')">✗</button>`:''}
+          </div>
+        </td>
+      </tr>`).join('')
+    : '<tr><td colspan="11" class="text-faint" style="text-align:center;padding:24px">Nenhum registro encontrado</td></tr>';
+}
+
+async function aprovarCam(id, status) {
+  const aprovado_por = prompt('Nome do responsável:','Eng. João Silva');
+  if (!aprovado_por) return;
+  const r = await api(`/caminhoes/${id}/aprovacao`, {
+    method:'PATCH', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ status, aprovado_por })
+  });
+  if (r.ok) { toast(status==='aprovado'?'Aprovado!':'Reprovado','success'); loadRegistros(); }
+}
+
+// ── TRAÇOS ────────────────────────────────────────────────────
+let tracoFilter = 1;
+function filterTracos(v) {
+  tracoFilter = v;
+  loadTracos();
+}
+async function loadTracos() {
+  const qs = tracoFilter!=='' ? `?ativo=${tracoFilter}` : '';
+  const { data } = await api(`/tracos${qs}`);
+  const tracos = Array.isArray(data) ? data : [];
+  document.getElementById('tracos-grid').innerHTML = tracos.length
+    ? tracos.map(t=>`
+      <div class="card card-hover">
+        <div class="card-header">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="font-mono font-600 text-amber">${t.codigo}</span>
+              <span class="badge badge-${t.fck>=30?'blue':'amber'}">C${t.fck}</span>
+              ${!t.ativo?'<span class="badge badge-muted">Inativo</span>':''}
+            </div>
+            <div class="text-xs text-faint mt-1">${t.descricao}</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+            <div style="background:var(--surface);border-radius:var(--r-sm);padding:8px">
+              <div class="text-xs text-faint">Slump</div>
+              <div class="font-mono font-600">${t.slump_minimo??'?'}–${t.slump_maximo??'?'} cm</div>
+            </div>
+            <div style="background:var(--surface);border-radius:var(--r-sm);padding:8px">
+              <div class="text-xs text-faint">A/C</div>
+              <div class="font-mono font-600">${t.relacao_agua_cimento??'—'}</div>
+            </div>
+          </div>
+          ${t.cimento_kg_m3 ? `
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px">
+            ${[['Cimento',t.cimento_kg_m3,'kg'],['Água',t.agua_litros_m3,'L'],['Areia',t.areia_kg_m3,'kg'],['Brita',t.brita_kg_m3,'kg']].map(([l,v,u])=>`
+              <div style="background:var(--bg-1);border:1px solid var(--border);border-radius:var(--r-sm);padding:7px;text-align:center">
+                <div class="font-mono" style="font-size:13px;font-weight:600">${v??'—'}</div>
+                <div class="text-xs text-faint">${l} ${u}</div>
+              </div>`).join('')}
+          </div>` : ''}
+          <div class="flex gap-2">
+            <button class="btn btn-secondary btn-sm" onclick="editTraco('${t.id}')">Editar</button>
+            <button class="btn btn-ghost btn-sm" onclick="toggleTraco('${t.id}','${t.ativo}')">${t.ativo?'Desativar':'Ativar'}</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteTraco('${t.id}','${t.codigo}')">Excluir</button>
+          </div>
+        </div>
+      </div>`).join('')
+    : `<div class="empty-state" style="grid-column:1/-1">
+        <div class="empty-state-icon">🔬</div>
+        <h3>Nenhum traço cadastrado</h3>
+        <p>Cadastre traços para vinculá-los aos registros de concreto</p>
+        <button class="btn btn-primary" onclick="resetTracoForm();openModal('modal-traco')">Novo Traço</button>
+      </div>`;
+}
+
+function resetTracoForm() {
+  document.getElementById('traco-id-edit').value='';
+  ['traco-codigo','traco-desc','traco-slump-min','traco-slump-max','traco-cimento','traco-agua',
+   'traco-areia','traco-brita-kg','traco-brita-tipo','traco-rac','traco-aditivo','traco-aditivo-kg',
+   'traco-res28','traco-obs'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('traco-norma').value='NBR 12655';
+  document.getElementById('traco-fck').value='25';
+  document.getElementById('traco-modal-title').textContent='Novo Traço';
+}
+
+async function editTraco(id) {
+  const { data: t } = await api(`/tracos/${id}`);
+  document.getElementById('traco-id-edit').value  = id;
+  document.getElementById('traco-codigo').value   = t.codigo||'';
+  document.getElementById('traco-fck').value      = t.fck||25;
+  document.getElementById('traco-desc').value     = t.descricao||'';
+  document.getElementById('traco-slump-min').value= t.slump_minimo||'';
+  document.getElementById('traco-slump-max').value= t.slump_maximo||'';
+  document.getElementById('traco-cimento').value  = t.cimento_kg_m3||'';
+  document.getElementById('traco-agua').value     = t.agua_litros_m3||'';
+  document.getElementById('traco-areia').value    = t.areia_kg_m3||'';
+  document.getElementById('traco-brita-kg').value = t.brita_kg_m3||'';
+  document.getElementById('traco-brita-tipo').value= t.brita||'';
+  document.getElementById('traco-rac').value      = t.relacao_agua_cimento||'';
+  document.getElementById('traco-aditivo').value  = t.aditivo||'';
+  document.getElementById('traco-aditivo-kg').value=t.aditivo_kg_m3||'';
+  document.getElementById('traco-res28').value    = t.resistencia_28d||'';
+  document.getElementById('traco-norma').value    = t.norma||'NBR 12655';
+  document.getElementById('traco-obs').value      = t.observacoes||'';
+  document.getElementById('traco-modal-title').textContent='Editar Traço';
+  openModal('modal-traco');
+}
+
+async function saveTraco() {
+  const id = document.getElementById('traco-id-edit').value;
+  const body = {
+    codigo:              document.getElementById('traco-codigo').value.trim(),
+    descricao:           document.getElementById('traco-desc').value.trim(),
+    fck:                +document.getElementById('traco-fck').value,
+    slump_minimo:        +document.getElementById('traco-slump-min').value||null,
+    slump_maximo:        +document.getElementById('traco-slump-max').value||null,
+    cimento_kg_m3:       +document.getElementById('traco-cimento').value||null,
+    agua_litros_m3:      +document.getElementById('traco-agua').value||null,
+    areia_kg_m3:         +document.getElementById('traco-areia').value||null,
+    brita_kg_m3:         +document.getElementById('traco-brita-kg').value||null,
+    brita:               document.getElementById('traco-brita-tipo').value,
+    relacao_agua_cimento:+document.getElementById('traco-rac').value||null,
+    aditivo:             document.getElementById('traco-aditivo').value,
+    aditivo_kg_m3:       +document.getElementById('traco-aditivo-kg').value||null,
+    resistencia_28d:     +document.getElementById('traco-res28').value||null,
+    norma:               document.getElementById('traco-norma').value,
+    observacoes:         document.getElementById('traco-obs').value,
+    ativo: 1
+  };
+  if (!body.codigo||!body.descricao||!body.fck) { toast('Código, descrição e FCK são obrigatórios','error'); return; }
+  const r = id
+    ? await api(`/tracos/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) })
+    : await api('/tracos', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+  if (r.ok) { toast(id?'Traço atualizado!':'Traço criado!'); closeModal('modal-traco'); loadTracos(); populateTracoSelects(); }
+  else toast(r.error||'Erro ao salvar','error');
+}
+
+async function toggleTraco(id, ativo) {
+  await api(`/tracos/${id}/toggle`, { method:'PATCH' });
+  toast(+ativo?'Traço desativado':'Traço ativado'); loadTracos();
+}
+
+async function deleteTraco(id, codigo) {
+  if (!confirm(`Excluir o traço ${codigo}?`)) return;
+  const r = await api(`/tracos/${id}`, { method:'DELETE' });
+  if (r.ok) { toast('Traço excluído'); loadTracos(); }
+  else toast(r.error,'error');
+}
+
+// ── PEÇAS ──────────────────────────────────────────────────────
+async function loadPecas() {
+  const obra_id = document.getElementById('peca-obra-filter').value;
+  const tipo    = document.getElementById('peca-tipo-filter').value;
+  const status  = document.getElementById('peca-status-filter').value;
+  let qs = '?';
+  if (obra_id) qs+=`obra_id=${obra_id}&`;
+  if (tipo)    qs+=`tipo=${tipo}&`;
+  if (status)  qs+=`status=${status}&`;
+  const { data } = await api(`/pecas${qs}`);
+  const pecas = Array.isArray(data)?data:[];
+  document.getElementById('pecas-tbody').innerHTML = pecas.length
+    ? pecas.map(p=>`
+      <tr>
+        <td class="col-mono">${p.codigo}</td>
+        <td><span class="badge badge-muted">${p.tipo||'—'}</span></td>
+        <td>${p.pavimento||'—'}</td>
+        <td>${p.bloco||'—'}</td>
+        <td class="font-mono">${p.area_m2!=null?p.area_m2+'m²':'—'}</td>
+        <td>${statusBadge(p.status)}</td>
+        <td class="text-faint text-xs">${p.concretada_em?new Date(p.concretada_em).toLocaleString('pt-BR'):'—'}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="7" class="text-faint" style="text-align:center;padding:24px">Nenhuma peça encontrada</td></tr>';
+}
+
+// ── POPULATE SELECTS ────────────────────────────────────────────
+async function populateObraSelects() {
+  const { data } = await api('/obras?limit=100');
+  const obras = data?.rows||[];
+  const opts = obras.map(o=>`<option value="${o.id}">${o.nome}</option>`).join('');
+  ['reg-obra-filter','peca-obra-filter','rel-obra-sel'].forEach(id=>{
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '<option value="">Todas as Obras</option>'+opts;
+  });
+}
+async function populateTracoSelects() {
+  const { data } = await api('/tracos?ativo=1');
+  const tracos = Array.isArray(data)?data:[];
+  const opts = tracos.map(t=>`<option value="${t.id}">${t.codigo} — ${t.descricao}</option>`).join('');
+  const el = document.getElementById('rel-traco');
+  if (el) el.innerHTML = '<option value="">Todos os Traços</option>'+opts;
+}
+
+// ── RELATÓRIO / PDF ────────────────────────────────────────────
+async function setupRelatorio() {
+  await populateObraSelects();
+  await populateTracoSelects();
+}
+
+async function previewRelatorio() {
+  const html = await buildRelatorioHTML();
+  document.getElementById('pdf-content').innerHTML = html;
+  openModal('modal-pdf');
+}
+
+async function gerarPDF() {
+  const html = await buildRelatorioHTML();
+  const win = window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head>
+    <title>ConcreteTrack — Relatório</title>
+    <style>
+      body { font-family: Arial, sans-serif; font-size: 11px; color: #1a1a1a; padding: 30px; }
+      h1 { font-size: 18px; border-bottom: 2px solid #f0a500; padding-bottom: 8px; margin-bottom: 16px; }
+      h2 { font-size: 12px; color: #555; margin: 16px 0 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+      table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+      th { background: #f5f5f5; padding: 6px 10px; text-align: left; font-size: 10px; border-bottom: 1px solid #ddd; }
+      td { padding: 6px 10px; border-bottom: 1px solid #eee; font-size: 10px; }
+      tr:nth-child(even) td { background: #fafafa; }
+      .kv { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 16px; }
+      .kv-item { background: #f9f9f9; border: 1px solid #eee; border-radius: 6px; padding: 10px; }
+      .kv-val { font-size: 20px; font-weight: 700; color: #f0a500; }
+      .kv-lbl { font-size: 9px; color: #888; text-transform: uppercase; }
+      @media print { body { padding: 15px; } }
+    </style>
+  </head><body>${html}</body></html>`);
+  win.document.close();
+  setTimeout(()=>win.print(), 600);
+}
+
+async function buildRelatorioHTML() {
+  const obra_id    = document.getElementById('rel-obra-sel').value;
+  const data_ini   = document.getElementById('rel-data-ini').value;
+  const data_fim   = document.getElementById('rel-data-fim').value;
+  const status     = document.getElementById('rel-status').value;
+  const traco_id   = document.getElementById('rel-traco').value;
+  const origem     = document.getElementById('rel-origem').value;
+
+  let qs='?';
+  if (obra_id)  qs+=`obra_id=${obra_id}&`;
+  if (data_ini) qs+=`data_inicio=${data_ini}&`;
+  if (data_fim) qs+=`data_fim=${data_fim}&`;
+  if (status)   qs+=`status=${status}&`;
+  if (traco_id) qs+=`traco_id=${traco_id}&`;
+  if (origem!=='') qs+=`concreto_obra=${origem}&`;
+
+  const { data: rel } = await api(`/relatorio${qs}`);
+  if (!rel) return '<p>Erro ao carregar dados.</p>';
+
+  const geradoEm = new Date(rel.gerado_em).toLocaleString('pt-BR');
+  const filtrosDesc = [
+    rel.obra_info ? `Obra: <strong>${rel.obra_info.nome}</strong>` : null,
+    data_ini ? `De: ${fmtDate(data_ini)}` : null,
+    data_fim ? `Até: ${fmtDate(data_fim)}` : null,
+    status ? `Status: ${status}` : null,
+    origem===''?null : origem==='1'?'Origem: Na Obra':'Origem: Usinado',
+  ].filter(Boolean).join(' &bull; ') || 'Todos os registros';
+
+  const t = rel.totais;
+  return `
+    <div class="pdf-preview">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
+        <div>
+          <h1>🏗️ Relatório de Rastreabilidade de Concreto</h1>
+          <p style="color:#666;font-size:11px">${filtrosDesc}</p>
+          <p style="color:#999;font-size:10px">Gerado em: ${geradoEm}</p>
+        </div>
+        ${rel.obra_info?`<div style="text-align:right;font-size:11px;color:#666">
+          <strong>${rel.obra_info.nome}</strong><br>
+          ${rel.obra_info.responsavel||''}<br>
+          ${rel.obra_info.localidade||''}
+        </div>`:''}
+      </div>
+
+      <div class="kv">
+        <div class="kv-item"><div class="kv-val">${t.registros}</div><div class="kv-lbl">Registros</div></div>
+        <div class="kv-item"><div class="kv-val">${t.volume_total.toFixed(1)}</div><div class="kv-lbl">Volume Total m³</div></div>
+        <div class="kv-item"><div class="kv-val" style="color:#2ec08a">${t.aprovados}</div><div class="kv-lbl">Aprovados</div></div>
+        <div class="kv-item"><div class="kv-val" style="color:#f05454">${t.reprovados}</div><div class="kv-lbl">Reprovados</div></div>
+      </div>
+
+      <h2>Registros de Concreto</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Código</th><th>Data</th><th>Traço</th><th>FCK</th>
+            <th>Slump Proj.</th><th>Slump Obt.</th><th>Volume</th>
+            <th>Origem</th><th>Fornecedor</th><th>Nota Fiscal</th>
+            <th>RT / CREA</th><th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rel.caminhoes.map(c=>`
+            <tr>
+              <td><strong>${c.codigo||'—'}</strong></td>
+              <td>${fmtDate(c.data_registro)}</td>
+              <td>${c.traco_codigo||'—'}</td>
+              <td>C${c.fck||'—'}</td>
+              <td>${c.slump_projeto!=null?c.slump_projeto+' cm':'—'}</td>
+              <td style="color:${c.slump_obtido!=null&&c.slump_projeto!=null&&Math.abs(c.slump_obtido-c.slump_projeto)>2?'#f05454':'inherit'}">${c.slump_obtido!=null?c.slump_obtido+' cm':'—'}</td>
+              <td>${c.volume_m3!=null?c.volume_m3+' m³':'—'}</td>
+              <td>${c.concreto_obra?'Na Obra':'Usinado'}</td>
+              <td>${c.fornecedor_nome||'—'}</td>
+              <td>${c.nota_fiscal||'—'}</td>
+              <td>${c.responsavel_tecnico||'—'}${c.crea?' / '+c.crea:''}</td>
+              <td class="status-${c.status}">${c.status?.toUpperCase()}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+
+      <p style="margin-top:24px;font-size:9px;color:#aaa;border-top:1px solid #eee;padding-top:12px">
+        ConcreteTrack v2.0 • Relatório gerado em ${geradoEm} • Conforme NBR 12655
+      </p>
+    </div>`;
+}
+
+function printPDF() {
+  const content = document.getElementById('pdf-content').innerHTML;
+  const win = window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head><title>ConcreteTrack — Relatório</title>
+    <style>
+      body { font-family: Arial, sans-serif; font-size: 11px; color: #1a1a1a; padding: 30px; }
+      h1 { font-size: 18px; border-bottom: 2px solid #f0a500; padding-bottom: 8px; margin-bottom: 16px; }
+      h2 { font-size: 12px; color: #555; margin: 16px 0 8px; text-transform: uppercase; }
+      table { width: 100%; border-collapse: collapse; }
+      th { background: #f5f5f5; padding: 6px 8px; font-size: 10px; border-bottom: 1px solid #ddd; text-align:left; }
+      td { padding: 6px 8px; border-bottom: 1px solid #eee; font-size: 10px; }
+      .kv { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 16px; }
+      .kv-item { background: #f9f9f9; border: 1px solid #eee; border-radius: 6px; padding: 10px; }
+      .kv-val { font-size: 20px; font-weight: 700; color: #f0a500; }
+      .kv-lbl { font-size: 9px; color: #888; text-transform: uppercase; }
+      .status-aprovado { color: #2ec08a; font-weight:600; }
+      .status-reprovado { color: #f05454; font-weight:600; }
+      .status-pendente  { color: #f0a500; font-weight:600; }
+      @media print { body { padding: 15px; } }
+    </style>
+  </head><body>${content.replace(/<div class="pdf-preview">/,'<div>').replace(/<\/div>$/,'')}</body></html>`);
+  win.document.close();
+  setTimeout(()=>win.print(), 800);
+}
+
+// ── INIT ────────────────────────────────────────────────────────
+(async () => {
+  await loadAll();
+  loadDashboard();
+})();
+</script>
+</body>
+</html>

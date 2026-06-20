@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ConcreteTrack Mobile</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0c0e14; --bg2:#11141d; --bg3:#171b27; --surface:#1d2133; --surface2:#232840;
+  --border:rgba(255,255,255,0.06); --border2:rgba(255,255,255,0.11); --border3:rgba(255,255,255,0.18);
+  --text:#dde2f0; --text2:#8d97b8; --text3:#5a637f;
+  --amber:#f0a500; --amber-bg:rgba(240,165,0,0.10); --amber-bd:rgba(240,165,0,0.25);
+  --green:#2ec08a; --green-bg:rgba(46,192,138,0.10); --green-bd:rgba(46,192,138,0.25);
+  --blue:#4d9dff; --blue-bg:rgba(77,157,255,0.10); --blue-bd:rgba(77,157,255,0.25);
+  --red:#f05454; --red-bg:rgba(240,84,84,0.10); --red-bd:rgba(240,84,84,0.25);
+  --purple:#9b8df5; --purple-bg:rgba(155,141,245,0.10);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'IBM Plex Sans',sans-serif;background:#000;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px}
+
+/* DEVICE */
+.device{width:375px;height:812px;background:var(--bg);border-radius:44px;overflow:hidden;position:relative;
+  box-shadow:0 0 0 1px rgba(255,255,255,0.1),0 40px 80px rgba(0,0,0,0.8),inset 0 0 0 1px rgba(255,255,255,0.05);
+  display:flex;flex-direction:column}
+.notch{background:#000;height:44px;width:100%;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;flex-shrink:0}
+.notch-pill{width:120px;height:32px;background:#000;border-radius:20px;border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;gap:8px}
+.notch-cam{width:10px;height:10px;background:#1a1a2e;border-radius:50%;border:1px solid rgba(255,255,255,0.1)}
+.notch-sensor{width:30px;height:8px;background:#1a1a2e;border-radius:4px}
+
+/* SCREEN */
+.screen{flex:1;overflow:hidden;position:relative;display:flex;flex-direction:column}
+.view{position:absolute;inset:0;display:flex;flex-direction:column;transition:transform .35s cubic-bezier(.4,0,.2,1),opacity .25s}
+.view.hidden{transform:translateX(100%);opacity:0;pointer-events:none}
+.view.slide-left{transform:translateX(-30%);opacity:0;pointer-events:none}
+
+/* STATUS BAR */
+.status-bar{height:14px;padding:0 20px;display:flex;align-items:center;justify-content:space-between;font-size:10px;color:var(--text2);flex-shrink:0}
+.status-right{display:flex;align-items:center;gap:4px}
+
+/* HEADER */
+.header{padding:8px 20px 14px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.back-btn{width:34px;height:34px;border-radius:10px;background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;color:var(--text2);transition:all .15s;flex-shrink:0}
+.back-btn:active{transform:scale(.92);background:var(--surface2)}
+.header-title{font-size:17px;font-weight:600;color:var(--text)}
+.header-sub{font-size:11px;color:var(--text3);margin-top:1px}
+
+/* SCROLL */
+.scroll{flex:1;overflow-y:auto;padding:0 16px 80px;-webkit-overflow-scrolling:touch}
+.scroll::-webkit-scrollbar{display:none}
+
+/* BOTTOM NAV */
+.bottom-nav{height:68px;background:rgba(17,20,29,.95);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-around;padding:0 8px 8px;flex-shrink:0;backdrop-filter:blur(12px)}
+.nav-tab{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:8px 14px;border-radius:12px;transition:all .15s;border:none;background:none;color:var(--text3);font-family:'IBM Plex Sans',sans-serif}
+.nav-tab.active{color:var(--amber)}
+.nav-tab:active{transform:scale(.92)}
+.nav-tab svg{width:20px;height:20px}
+.nav-tab span{font-size:10px;font-weight:500}
+.nav-dot{width:4px;height:4px;border-radius:2px;background:var(--amber);margin-top:2px;opacity:0;transition:opacity .15s}
+.nav-tab.active .nav-dot{opacity:1}
+
+/* CARDS */
+.card{background:var(--bg3);border:1px solid var(--border);border-radius:14px;margin-bottom:12px;overflow:hidden}
+.card-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:13px;font-weight:600;color:var(--text)}
+.card-body{padding:14px 16px}
+.step-badge{width:22px;height:22px;border-radius:6px;background:var(--amber);color:#0c0e14;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* FORM */
+.field{margin-bottom:14px}
+.field-label{font-size:10px;color:var(--text3);font-weight:600;margin-bottom:5px;display:block;text-transform:uppercase;letter-spacing:.5px}
+.field-input{width:100%;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;color:var(--text);font-size:14px;font-family:'IBM Plex Sans',sans-serif;padding:10px 12px;outline:none;transition:border-color .15s;-webkit-appearance:none}
+.field-input:focus{border-color:var(--amber);background:var(--bg3)}
+.field-input::placeholder{color:var(--text3)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+select.field-input{appearance:none;-webkit-appearance:none;cursor:pointer}
+textarea.field-input{min-height:76px;resize:none}
+
+/* TOGGLE */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)}
+.toggle-switch{width:44px;height:26px;background:var(--surface2);border-radius:13px;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0;border:none}
+.toggle-switch.on{background:var(--green)}
+.toggle-switch::after{content:'';position:absolute;width:20px;height:20px;background:#fff;border-radius:50%;top:3px;left:3px;transition:transform .2s}
+.toggle-switch.on::after{transform:translateX(18px)}
+
+/* BUTTONS */
+.btn-full{width:100%;padding:14px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;border:none;font-family:'IBM Plex Sans',sans-serif;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn-full:active{transform:scale(.97)}
+.btn-primary{background:var(--amber);color:#0c0e14}
+.btn-secondary{background:var(--surface);color:var(--text2);border:1px solid var(--border2)}
+.btn-green{background:var(--green);color:#0a2a1f}
+
+/* CHIPS */
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+.chip{padding:6px 12px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:var(--surface);color:var(--text2);transition:all .15s}
+.chip.active{background:var(--amber-bg);color:var(--amber);border-color:var(--amber-bd)}
+.chip:active{transform:scale(.95)}
+
+/* STEPS */
+.steps{display:flex;gap:0;margin-bottom:20px}
+.step{flex:1;display:flex;flex-direction:column;align-items:center;position:relative}
+.step::after{content:'';position:absolute;top:12px;left:50%;width:100%;height:1px;background:var(--border2)}
+.step:last-child::after{display:none}
+.step-circle{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;z-index:1;transition:all .2s}
+.step-circle.done{background:var(--green);color:#0a2a1f}
+.step-circle.active{background:var(--amber);color:#0c0e14}
+.step-circle.pending{background:var(--surface);color:var(--text3)}
+.step-name{font-size:9px;color:var(--text3);margin-top:5px;text-align:center}
+
+/* SLUMP GAUGE */
+.gauge-wrap{display:flex;align-items:center;gap:16px;padding:8px 0}
+.gauge-info{flex:1}
+.gauge-value{font-size:28px;font-weight:700;color:var(--green);font-family:'IBM Plex Mono',monospace}
+.gauge-label{font-size:12px;color:var(--text3);margin-top:2px}
+.range-slider{width:100%;accent-color:var(--amber);cursor:pointer;margin-top:6px}
+
+/* PHOTO GRID */
+.photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.photo-slot{aspect-ratio:1;border-radius:10px;border:1.5px dashed var(--border2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;background:var(--surface);transition:all .15s}
+.photo-slot:active{background:var(--surface2)}
+.photo-slot svg{width:20px;height:20px;color:var(--text3)}
+.photo-slot span{font-size:10px;color:var(--text3)}
+
+/* MAP */
+.map-canvas{width:100%;aspect-ratio:1.5;background:var(--bg3);border-radius:12px;border:1px solid var(--border);overflow:hidden;position:relative}
+.map-svg{width:100%;height:100%}
+.map-area{cursor:pointer;transition:opacity .15s}
+.map-area:active{opacity:.8}
+
+/* BADGE */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-amber{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)}
+.badge-green{background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)}
+.badge-blue{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd)}
+.badge-red{background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)}
+.badge-purple{background:var(--purple-bg);color:var(--purple)}
+.badge-muted{background:var(--surface);color:var(--text2);border:1px solid var(--border2)}
+
+/* FILE */
+.file-attach{border:1.5px dashed var(--border2);border-radius:12px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;background:var(--surface);transition:all .15s}
+.file-attach:active{background:var(--surface2)}
+.file-list{margin-top:10px;display:flex;flex-direction:column;gap:7px}
+.file-item{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--surface);border-radius:9px;font-size:12px}
+.file-item-name{flex:1;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.file-size{color:var(--text3);font-size:11px;font-family:'IBM Plex Mono',monospace}
+
+/* HOME CARD */
+.home-card{background:var(--bg3);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:all .15s}
+.home-card:active{transform:scale(.98);background:var(--surface)}
+.home-icon{width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+
+/* TOAST */
+.toast{position:absolute;bottom:80px;left:16px;right:16px;background:var(--green);color:#0a2a1f;padding:12px 16px;border-radius:12px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;z-index:999;transform:translateY(20px);opacity:0;transition:all .3s;pointer-events:none}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.error{background:var(--red);color:#fff}
+
+/* OBRA BADGE EM OBRA */
+.obra-badge{background:linear-gradient(135deg,var(--amber-bg),rgba(155,141,245,.1));border:1px solid var(--amber-bd);border-radius:10px;padding:8px 12px;margin-bottom:12px;display:flex;align-items:center;gap:8px;font-size:12px}
+
+::-webkit-scrollbar{display:none}
+</style>
+</head>
+<body>
+<div class="device">
+  <div class="notch">
+    <div class="notch-pill"><div class="notch-cam"></div><div class="notch-sensor"></div></div>
+  </div>
+
+  <div class="screen" id="screen">
+
+    <!-- ══ HOME ══ -->
+    <div class="view" id="view-home">
+      <div class="status-bar"><span>9:41</span><div class="status-right"><span style="font-size:11px;font-weight:500">100%</span></div></div>
+      <div style="padding:10px 20px 0">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div>
+            <div style="font-size:20px;font-weight:700">ConcreteTrack</div>
+            <div style="font-size:11px;color:var(--text3)">Registro de Concreto em Campo</div>
+          </div>
+          <div style="width:38px;height:38px;border-radius:50%;background:var(--amber);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#0c0e14">JS</div>
+        </div>
+      </div>
+      <div class="scroll" style="padding:14px 16px 80px">
+        <!-- Obra ativa -->
+        <div style="background:linear-gradient(135deg,#1a1f32,#1d2133);border:1px solid rgba(240,165,0,0.2);border-radius:16px;padding:16px;margin-bottom:16px">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--amber);font-weight:700;margin-bottom:6px">Obra Ativa</div>
+          <div style="font-size:15px;font-weight:600;margin-bottom:2px" id="home-obra-nome">Carregando...</div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:12px" id="home-obra-local">—</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+            <div style="background:rgba(0,0,0,.2);border-radius:10px;padding:10px;text-align:center">
+              <div style="font-size:18px;font-weight:700;color:var(--amber);font-family:'IBM Plex Mono',monospace" id="home-total-pecas">—</div>
+              <div style="font-size:10px;color:var(--text3)">Peças</div>
+            </div>
+            <div style="background:rgba(0,0,0,.2);border-radius:10px;padding:10px;text-align:center">
+              <div style="font-size:18px;font-weight:700;color:var(--green);font-family:'IBM Plex Mono',monospace" id="home-concretadas">—</div>
+              <div style="font-size:10px;color:var(--text3)">Concretadas</div>
+            </div>
+            <div style="background:rgba(0,0,0,.2);border-radius:10px;padding:10px;text-align:center">
+              <div style="font-size:18px;font-weight:700;color:var(--blue);font-family:'IBM Plex Mono',monospace" id="home-caminhoes">—</div>
+              <div style="font-size:10px;color:var(--text3)">Registros</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">Registrar</div>
+
+        <div class="home-card" onclick="goTo('tela1')">
+          <div class="home-icon" style="background:var(--amber-bg)">📋</div>
+          <div style="flex:1">
+            <div style="font-size:14px;font-weight:600;margin-bottom:2px">Dados do Fornecedor</div>
+            <div style="font-size:11px;color:var(--text3)">Traço, NF, lacre, FCK, slump...</div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <div class="home-card" onclick="goTo('tela2')">
+          <div class="home-icon" style="background:var(--purple-bg)">🗺️</div>
+          <div style="flex:1">
+            <div style="font-size:14px;font-weight:600;margin-bottom:2px">Peças Concretadas</div>
+            <div style="font-size:11px;color:var(--text3)">Marcar na planta da obra</div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <div class="home-card" onclick="goTo('tela3')">
+          <div class="home-icon" style="background:var(--green-bg)">📷</div>
+          <div style="flex:1">
+            <div style="font-size:14px;font-weight:600;margin-bottom:2px">Evidências</div>
+            <div style="font-size:11px;color:var(--text3)">Fotos do slump e anexos</div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+
+        <div style="font-size:12px;font-weight:600;color:var(--text2);margin:16px 0 10px;text-transform:uppercase;letter-spacing:.5px">Últimos Registros</div>
+        <div class="card"><div class="card-body" style="padding:0" id="home-registros">
+          <div style="padding:16px;text-align:center;color:var(--text3);font-size:12px">Carregando...</div>
+        </div></div>
+      </div>
+
+      <div class="bottom-nav">
+        <button class="nav-tab active" onclick="goTo('home')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+          <span>Início</span><div class="nav-dot"></div>
+        </button>
+        <button class="nav-tab" onclick="goTo('tela1')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span>Formulário</span><div class="nav-dot"></div>
+        </button>
+        <button class="nav-tab" onclick="goTo('tela2')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+          <span>Peças</span><div class="nav-dot"></div>
+        </button>
+        <button class="nav-tab" onclick="goTo('tela3')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <span>Evidências</span><div class="nav-dot"></div>
+        </button>
+      </div>
+    </div>
+
+    <!-- ══ TELA 1: DADOS ══ -->
+    <div class="view hidden" id="view-tela1">
+      <div class="status-bar"><span>9:41</span><div class="status-right"><span style="font-size:11px">100%</span></div></div>
+      <div class="header">
+        <button class="back-btn" onclick="goBack()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div><div class="header-title">Dados do Registro</div><div style="font-size:11px;color:var(--text3)">Concreto Usinado ou em Obra</div></div>
+        <span class="badge badge-amber" style="margin-left:auto">1/3</span>
+      </div>
+      <div style="padding:0 20px 12px">
+        <div class="steps">
+          <div class="step"><div class="step-circle active">1</div><div class="step-name">Dados</div></div>
+          <div class="step"><div class="step-circle pending">2</div><div class="step-name">Peças</div></div>
+          <div class="step"><div class="step-circle pending">3</div><div class="step-name">Evidências</div></div>
+        </div>
+      </div>
+
+      <div class="scroll">
+        <!-- TRAÇO — primeiro campo conforme solicitado -->
+        <div class="card">
+          <div class="card-header">
+            <div style="display:flex;align-items:center;gap:8px"><div class="step-badge">T</div><span class="card-title">Traço do Concreto</span></div>
+          </div>
+          <div class="card-body">
+            <div class="field">
+              <label class="field-label">Traço *</label>
+              <select class="field-input" id="f-traco" onchange="onTracoChange(this.value)">
+                <option value="">— Selecione o Traço —</option>
+              </select>
+            </div>
+            <!-- Detalhe do traço selecionado -->
+            <div id="traco-detalhe" style="display:none;background:var(--surface);border-radius:10px;padding:12px;margin-top:4px">
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--amber);font-weight:700;margin-bottom:8px">Especificações do Traço</div>
+              <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px" id="traco-specs"></div>
+            </div>
+            <!-- Origem do concreto -->
+            <div class="toggle-row" style="margin-top:12px">
+              <div>
+                <div style="font-size:13px;font-weight:500;color:var(--text)">Concreto feito na obra?</div>
+                <div style="font-size:11px;color:var(--text3);margin-top:1px" id="origem-label">Não — Concreto usinado (betoneira)</div>
+              </div>
+              <button class="toggle-switch" id="toggle-obra" onclick="toggleOrigem()"></button>
+            </div>
+            <!-- Campos extras quando é na obra -->
+            <div id="campos-obra" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+              <div style="font-size:10px;color:var(--amber);text-transform:uppercase;font-weight:700;margin-bottom:10px">⚙️ Concreto Preparado na Obra</div>
+              <div class="field-row">
+                <div class="field"><label class="field-label">Responsável Técnico</label><input class="field-input" type="text" placeholder="Eng. João Silva" id="f-rt"></div>
+                <div class="field"><label class="field-label">CREA / CAU</label><input class="field-input" type="text" placeholder="MG-12345" id="f-crea"></div>
+              </div>
+              <div class="field">
+                <label class="field-label">Temperatura Ambiente (°C)</label>
+                <input class="field-input" type="number" placeholder="28" id="f-temp">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Identificação -->
+        <div class="card">
+          <div class="card-header">
+            <div style="display:flex;align-items:center;gap:8px"><div class="step-badge">1</div><span class="card-title">Identificação</span></div>
+          </div>
+          <div class="card-body">
+            <div class="field-row">
+              <div class="field"><label class="field-label">Data</label><input class="field-input" type="date" id="f-data"></div>
+              <div class="field"><label class="field-label">Código (auto)</label><input class="field-input" type="text" placeholder="CAM-2025-001" id="f-codigo" readonly style="opacity:.6"></div>
+            </div>
+            <div class="field-row">
+              <div class="field"><label class="field-label">Nº Nota Fiscal</label><input class="field-input" type="text" placeholder="NF-000000" id="f-nf"></div>
+              <div class="field"><label class="field-label">Nº Lacre</label><input class="field-input" type="text" placeholder="LC-0001" id="f-lacre"></div>
+            </div>
+            <div class="field">
+              <label class="field-label">Obra</label>
+              <select class="field-input" id="f-obra"><option value="">— Selecione a obra —</option></select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Especificações Técnicas -->
+        <div class="card">
+          <div class="card-header">
+            <div style="display:flex;align-items:center;gap:8px"><div class="step-badge" style="background:var(--purple)">2</div><span class="card-title">Especificações Técnicas</span></div>
+          </div>
+          <div class="card-body">
+            <div class="field-row3">
+              <div class="field">
+                <label class="field-label">FCK (MPa)</label>
+                <select class="field-input" id="f-fck">
+                  <option>15</option><option>20</option><option selected>25</option>
+                  <option>30</option><option>35</option><option>40</option><option>50</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label">Slump Proj. (cm)</label>
+                <input class="field-input" type="number" step=".5" placeholder="10" id="f-slump">
+              </div>
+              <div class="field">
+                <label class="field-label">Tolerância ±</label>
+                <input class="field-input" type="number" step=".5" placeholder="2" id="f-tol">
+              </div>
+            </div>
+            <div class="field">
+              <label class="field-label">Volume (m³)</label>
+              <input class="field-input" type="number" step=".5" placeholder="8.0" id="f-volume">
+            </div>
+
+            <!-- Slump Obtido — gauge -->
+            <div style="background:var(--surface);border-radius:12px;padding:14px;margin-top:4px">
+              <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:10px">Slump Obtido em Obra</div>
+              <div class="gauge-wrap">
+                <svg width="80" height="80" viewBox="0 0 80 80" style="flex-shrink:0">
+                  <circle cx="40" cy="40" r="30" fill="none" stroke="var(--surface2)" stroke-width="10"/>
+                  <circle cx="40" cy="40" r="30" fill="none" stroke="var(--green)" stroke-width="10"
+                    stroke-dasharray="94.2 94.2" stroke-dashoffset="23.6" stroke-linecap="round" id="slump-arc"
+                    transform="rotate(-90 40 40)"/>
+                  <text x="40" y="44" text-anchor="middle" font-size="13" font-weight="700" fill="var(--text)" font-family="IBM Plex Mono" id="slump-display">10</text>
+                </svg>
+                <div class="gauge-info">
+                  <div style="font-size:11px;color:var(--text3);margin-bottom:2px">Arraste para ajustar</div>
+                  <div class="gauge-value" id="slump-val">10 cm</div>
+                  <input type="range" class="range-slider" min="0" max="25" step=".5" value="10" id="slump-range" oninput="updateSlump(this.value)">
+                  <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3)"><span>0</span><span>25 cm</span></div>
+                </div>
+              </div>
+              <div id="slump-status" style="font-size:11px;text-align:center;margin-top:6px;font-weight:500;color:var(--green)">✓ Dentro da tolerância</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Horários -->
+        <div class="card">
+          <div class="card-header">
+            <div style="display:flex;align-items:center;gap:8px"><div class="step-badge" style="background:var(--blue)">3</div><span class="card-title">Horários</span></div>
+          </div>
+          <div class="card-body">
+            <div class="field-row">
+              <div class="field"><label class="field-label">Saída da Usina</label><input class="field-input" type="time" id="f-saida"></div>
+              <div class="field"><label class="field-label">Chegada na Obra</label><input class="field-input" type="time" id="f-chegada"></div>
+            </div>
+            <div class="field-row">
+              <div class="field"><label class="field-label">Início Aplicação</label><input class="field-input" type="time" id="f-inicio"></div>
+              <div class="field"><label class="field-label">Fim Aplicação</label><input class="field-input" type="time" id="f-fim"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Observações -->
+        <div class="card">
+          <div class="card-header">
+            <div style="display:flex;align-items:center;gap:8px"><div class="step-badge" style="background:var(--red)">4</div><span class="card-title">Observações</span></div>
+          </div>
+          <div class="card-body">
+            <div class="toggle-row">
+              <div>
+                <div style="font-size:13px;font-weight:500;color:var(--text)">Sobrou concreto?</div>
+                <div style="font-size:11px;color:var(--text3);margin-top:1px" id="sobrou-label">Não</div>
+              </div>
+              <button class="toggle-switch" id="toggle-sobrou" onclick="toggleSobrou()"></button>
+            </div>
+            <div id="sobrou-field" style="display:none;padding-top:12px">
+              <div class="field"><label class="field-label">Quantidade (m³)</label><input class="field-input" type="number" step=".5" placeholder="0.5" id="f-sobrou"></div>
+            </div>
+            <div class="field" style="margin-top:12px">
+              <label class="field-label">Observações / Reprovações</label>
+              <textarea class="field-input" placeholder="Ocorrências, reprovações..." id="f-obs"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-full btn-primary" onclick="salvarT1()" style="margin-bottom:8px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Salvar e Continuar
+        </button>
+        <button class="btn-full btn-secondary" onclick="goBack()">Cancelar</button>
+      </div>
+    </div>
+
+    <!-- ══ TELA 2: PEÇAS ══ -->
+    <div class="view hidden" id="view-tela2">
+      <div class="status-bar"><span>9:41</span><div class="status-right"><span style="font-size:11px">100%</span></div></div>
+      <div class="header">
+        <button class="back-btn" onclick="goBack()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div><div class="header-title">Peças Concretadas</div><div style="font-size:11px;color:var(--text3)">Marcar na planta da obra</div></div>
+        <span class="badge badge-amber" style="margin-left:auto">2/3</span>
+      </div>
+      <div style="padding:0 20px 12px">
+        <div class="steps">
+          <div class="step"><div class="step-circle done">✓</div><div class="step-name">Dados</div></div>
+          <div class="step"><div class="step-circle active">2</div><div class="step-name">Peças</div></div>
+          <div class="step"><div class="step-circle pending">3</div><div class="step-name">Evidências</div></div>
+        </div>
+      </div>
+      <div class="scroll">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Vincular Obra</span></div>
+          <div class="card-body">
+            <div class="field">
+              <label class="field-label">Pavimento / Planta</label>
+              <div class="chips">
+                <div class="chip active" onclick="selectChip(this,'pav')">Térreo</div>
+                <div class="chip" onclick="selectChip(this,'pav')">1° Pav.</div>
+                <div class="chip" onclick="selectChip(this,'pav')">2° Pav.</div>
+                <div class="chip" onclick="selectChip(this,'pav')">Cobertura</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3)"><div style="width:10px;height:10px;border-radius:2px;background:var(--green)"></div>Concretada</div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3)"><div style="width:10px;height:10px;border-radius:2px;background:var(--amber)"></div>Selecionada</div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3)"><div style="width:10px;height:10px;border-radius:2px;background:rgba(255,255,255,0.08)"></div>Disponível</div>
+        </div>
+
+        <div class="card" style="margin-bottom:12px">
+          <div class="card-header">
+            <span class="card-title">Planta — Pavimento Térreo</span>
+            <span style="font-size:11px;color:var(--text3)" id="sel-count">0 selecionadas</span>
+          </div>
+          <div class="card-body" style="padding:12px">
+            <div class="map-canvas">
+              <svg class="map-svg" viewBox="0 0 340 220" id="planta-svg">
+                <rect x="10" y="10" width="320" height="200" rx="4" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+                <line x1="10" y1="110" x2="180" y2="110" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+                <line x1="180" y1="10" x2="180" y2="220" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+                <line x1="180" y1="130" x2="330" y2="130" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+                <g id="p-a1" class="map-area" onclick="togglePeca('a1',this)">
+                  <rect x="18" y="18" width="36" height="28" rx="4" fill="rgba(46,192,138,.2)" stroke="#2ec08a" stroke-width="1"/><text x="36" y="35" text-anchor="middle" font-size="9" fill="#2ec08a" font-family="IBM Plex Sans" font-weight="600">P-A1</text>
+                </g>
+                <g id="p-a2" class="map-area" onclick="togglePeca('a2',this)">
+                  <rect x="74" y="18" width="36" height="28" rx="4" fill="rgba(255,255,255,.04)" stroke="rgba(255,255,255,.2)" stroke-width="1"/><text x="92" y="35" text-anchor="middle" font-size="9" fill="var(--text3)" font-family="IBM Plex Sans">P-A2</text>
+                </g>
+                <g id="p-a3" class="map-area" onclick="togglePeca('a3',this)">
+                  <rect x="130" y="18" width="36" height="28" rx="4" fill="rgba(255,255,255,.04)" stroke="rgba(255,255,255,.2)" stroke-width="1"/><text x="148" y="35" text-anchor="middle" font-size="9" fill="var(--text3)" font-family="IBM Plex Sans">P-A3</text>
+                </g>
+                <g id="p-b1" class="map-area" onclick="togglePeca('b1',this)">
+                  <rect x="18" y="80" width="36" height="28" rx="4" fill="rgba(255,255,255,.04)" stroke="rgba(255,255,255,.2)" stroke-width="1"/><text x="36" y="97" text-anchor="middle" font-size="9" fill="var(--text3)" font-family="IBM Plex Sans">P-B1</text>
+                </g>
+                <g id="p-b2" class="map-area" onclick="togglePeca('b2',this)">
+                  <rect x="74" y="80" width="36" height="28" rx="4" fill="rgba(255,255,255,.04)" stroke="rgba(255,255,255,.2)" stroke-width="1"/><text x="92" y="97" text-anchor="middle" font-size="9" fill="var(--text3)" font-family="IBM Plex Sans">P-B2</text>
+                </g>
+                <g id="p-b3" class="map-area" onclick="togglePeca('b3',this)">
+                  <rect x="130" y="80" width="36" height="28" rx="4" fill="rgba(255,255,255,.04)" stroke="rgba(255,255,255,.2)" stroke-width="1"/><text x="148" y="97" text-anchor="middle" font-size="9" fill="var(--text3)" font-family="IBM Plex Sans">P-B3</text>
+                </g>
+                <g id="v-1" class="map-area" onclick="togglePeca('v1',this)">
+                  <rect x="58" y="26" width="12" height="10" rx="2" fill="rgba(255,255,255,.04)" stroke="rgba(255,255,255,.2)" stroke-width=".8"/><text x="64" y="34" text-anchor="middle" font-size="7" fill="var(--text3)" font-family="IBM Plex Sans">V1</text>
+                </g>
+                <g id="v-5" class="map-area" onclick="togglePeca('v5',this)">
+                  <rect x="114" y="88" width="12" height="10" rx="2" fill="rgba(46,192,138,.2)" stroke="#2ec08a" stroke-width=".8"/><text x="120" y="96" text-anchor="middle" font-size="7" fill="#2ec08a" font-family="IBM Plex Sans">V5</text>
+                </g>
+                <g id="l-1" class="map-area" onclick="togglePeca('l1',this)">
+                  <rect x="195" y="18" width="120" height="104" rx="4" fill="rgba(255,255,255,.02)" stroke="rgba(255,255,255,.12)" stroke-width="1"/>
+                  <text x="255" y="66" text-anchor="middle" font-size="11" fill="var(--text3)" font-family="IBM Plex Sans">Laje L1</text>
+                  <text x="255" y="80" text-anchor="middle" font-size="9" fill="var(--text3)" font-family="IBM Plex Sans" opacity=".6">68 m²</text>
+                </g>
+                <g id="l-2" class="map-area" onclick="togglePeca('l2',this)">
+                  <rect x="195" y="138" width="120" height="68" rx="4" fill="rgba(46,192,138,.1)" stroke="#2ec08a" stroke-width="1"/>
+                  <text x="255" y="168" text-anchor="middle" font-size="11" fill="#2ec08a" font-family="IBM Plex Sans">Laje L2</text>
+                  <text x="255" y="182" text-anchor="middle" font-size="9" fill="#2ec08a" font-family="IBM Plex Sans" opacity=".7">44 m²</text>
+                </g>
+                <g id="l-3" class="map-area" onclick="togglePeca('l3',this)">
+                  <rect x="18" y="120" width="150" height="86" rx="4" fill="rgba(255,255,255,.02)" stroke="rgba(255,255,255,.12)" stroke-width="1"/>
+                  <text x="93" y="160" text-anchor="middle" font-size="11" fill="var(--text3)" font-family="IBM Plex Sans">Laje L3</text>
+                  <text x="93" y="174" text-anchor="middle" font-size="9" fill="var(--text3)" font-family="IBM Plex Sans" opacity=".6">96 m²</text>
+                </g>
+                <text x="36" y="8" text-anchor="middle" font-size="8" fill="rgba(255,255,255,.2)" font-family="IBM Plex Sans">A</text>
+                <text x="92" y="8" text-anchor="middle" font-size="8" fill="rgba(255,255,255,.2)" font-family="IBM Plex Sans">B</text>
+                <text x="148" y="8" text-anchor="middle" font-size="8" fill="rgba(255,255,255,.2)" font-family="IBM Plex Sans">C</text>
+              </svg>
+            </div>
+            <div style="font-size:11px;color:var(--text3);text-align:center;margin-top:8px">Toque nas peças para selecionar</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">Peças Selecionadas</span></div>
+          <div class="card-body" style="padding:10px 14px">
+            <div id="pecas-list" style="font-size:13px;color:var(--text3);font-style:italic">Nenhuma peça selecionada</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">Local de Lançamento</span></div>
+          <div class="card-body">
+            <div class="field"><label class="field-label">Descrição</label><textarea class="field-input" placeholder="Ex: Pilares eixo A, pavimento térreo..." id="f-local"></textarea></div>
+            <div class="field-row">
+              <div class="field"><label class="field-label">Nível</label><input class="field-input" type="text" placeholder="+0,00" id="f-nivel"></div>
+              <div class="field"><label class="field-label">Bloco</label><input class="field-input" type="text" placeholder="Norte" id="f-bloco"></div>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-full btn-primary" onclick="salvarT2()" style="margin-bottom:8px">Continuar para Evidências →</button>
+        <button class="btn-full btn-secondary" onclick="goBack()">Voltar</button>
+      </div>
+    </div>
+
+    <!-- ══ TELA 3: EVIDÊNCIAS ══ -->
+    <div class="view hidden" id="view-tela3">
+      <div class="status-bar"><span>9:41</span><div class="status-right"><span style="font-size:11px">100%</span></div></div>
+      <div class="header">
+        <button class="back-btn" onclick="goBack()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div><div class="header-title">Evidências</div><div style="font-size:11px;color:var(--text3)">Fotos e documentos</div></div>
+        <span class="badge badge-amber" style="margin-left:auto">3/3</span>
+      </div>
+      <div style="padding:0 20px 12px">
+        <div class="steps">
+          <div class="step"><div class="step-circle done">✓</div><div class="step-name">Dados</div></div>
+          <div class="step"><div class="step-circle done">✓</div><div class="step-name">Peças</div></div>
+          <div class="step"><div class="step-circle active">3</div><div class="step-name">Evidências</div></div>
+        </div>
+      </div>
+      <div class="scroll">
+        <!-- Slump -->
+        <div class="card">
+          <div class="card-header">
+            <div style="display:flex;align-items:center;gap:8px"><div class="step-badge">📷</div><span class="card-title">Fotos do Slump Test</span></div>
+            <span class="badge badge-muted">0/6</span>
+          </div>
+          <div class="card-body">
+            <div class="photo-grid">
+              <div class="photo-slot" onclick="addPhoto('slump')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Vista 1</span></div>
+              <div class="photo-slot" onclick="addPhoto('slump')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Vista 2</span></div>
+              <div class="photo-slot" onclick="addPhoto('slump')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Régua</span></div>
+              <div class="photo-slot" onclick="addPhoto('slump')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Cone</span></div>
+              <div class="photo-slot" onclick="addPhoto('slump')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Adicional</span></div>
+              <div class="photo-slot" onclick="addPhoto('slump')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg><span>+</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fotos obra -->
+        <div class="card">
+          <div class="card-header">
+            <div style="display:flex;align-items:center;gap:8px"><div class="step-badge" style="background:var(--purple)">🏗️</div><span class="card-title">Fotos da Concretagem</span></div>
+          </div>
+          <div class="card-body">
+            <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Lançamento, adensamento e acabamento.</div>
+            <div class="photo-grid">
+              <div class="photo-slot" onclick="addPhoto('obra')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Lançamento</span></div>
+              <div class="photo-slot" onclick="addPhoto('obra')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Adensamento</span></div>
+              <div class="photo-slot" onclick="addPhoto('obra')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Acabamento</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tipo evidência -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">Tipo de Evidência</span></div>
+          <div class="card-body">
+            <div class="chips">
+              <div class="chip active" onclick="selectChip(this,'ev')">Slump Test</div>
+              <div class="chip" onclick="selectChip(this,'ev')">Corpos de Prova</div>
+              <div class="chip" onclick="selectChip(this,'ev')">Adensamento</div>
+              <div class="chip" onclick="selectChip(this,'ev')">Acabamento</div>
+              <div class="chip" onclick="selectChip(this,'ev')">NF / Laudo</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Arquivos -->
+        <div class="card">
+          <div class="card-header">
+            <div style="display:flex;align-items:center;gap:8px"><div class="step-badge" style="background:var(--amber)">📎</div><span class="card-title">Anexar Arquivos</span></div>
+          </div>
+          <div class="card-body">
+            <div style="font-size:12px;color:var(--text3);margin-bottom:10px">PDFs, laudos técnicos, relatórios de ensaio.</div>
+            <div class="file-attach" onclick="addArquivo()">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="1.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+              <div style="font-size:13px;color:var(--text2);font-weight:500">Toque para anexar arquivo</div>
+              <div style="font-size:11px;color:var(--text3)">PDF, DOC, XLS — até 10MB</div>
+            </div>
+            <div class="file-list" id="file-list">
+              <div class="file-item">
+                <span style="font-size:16px">📄</span>
+                <span class="file-item-name">laudo_ensaio_fck25.pdf</span>
+                <span class="file-size">842KB</span>
+                <span style="color:var(--red);cursor:pointer" onclick="removeArquivo(this)">✕</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RT -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">Responsável Técnico</span></div>
+          <div class="card-body">
+            <div class="field-row">
+              <div class="field"><label class="field-label">Nome</label><input class="field-input" type="text" placeholder="Eng. Responsável" id="f-rt2" value="João Silva"></div>
+              <div class="field"><label class="field-label">CREA / CAU</label><input class="field-input" type="text" placeholder="MG-000000" id="f-crea2"></div>
+            </div>
+            <div style="background:var(--surface);border-radius:10px;padding:14px;margin-top:8px;text-align:center;border:1px solid var(--border2)">
+              <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Área de assinatura digital</div>
+              <div style="width:100%;height:56px;border:1.5px dashed var(--border2);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="showToast('Pad de assinatura será aberto')">
+                <span style="font-size:12px;color:var(--text3)">✍️  Assinar aqui</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-full btn-green" onclick="finalizarRegistro()" style="margin-bottom:8px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Finalizar Registro
+        </button>
+        <button class="btn-full btn-secondary" onclick="goBack()">Voltar</button>
+      </div>
+    </div>
+
+  </div><!-- /screen -->
+
+  <div class="toast" id="toast">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+    <span id="toast-msg">Salvo!</span>
+  </div>
+</div><!-- /device -->
+
+<script>
+const API = 'http://localhost:3001/api';
+let navHistory = ['home'];
+let selectedPecas = new Set(['a1','v5','l2']);
+let concretasFixas = new Set(['a1','v5','l2']);
+let tracosData = [];
+let obrasData = [];
+let caminhaoId = null; // ID do registro atual
+
+// ── NAVEGAÇÃO ──────────────────────────────────────────────────
+function goTo(view) {
+  const cur = navHistory[navHistory.length-1];
+  if (cur===view) return;
+  document.getElementById('view-'+cur).classList.add('slide-left');
+  const next = document.getElementById('view-'+view);
+  next.classList.remove('hidden');
+  setTimeout(()=>document.getElementById('view-'+cur).classList.add('hidden'),350);
+  navHistory.push(view);
+  updateNav(view);
+}
+function goBack() {
+  if (navHistory.length<=1) return;
+  const cur = navHistory.pop();
+  const prev = navHistory[navHistory.length-1];
+  const curEl = document.getElementById('view-'+cur);
+  const prevEl = document.getElementById('view-'+prev);
+  curEl.classList.add('hidden'); curEl.classList.remove('slide-left');
+  prevEl.classList.remove('hidden'); prevEl.classList.remove('slide-left');
+  updateNav(prev);
+}
+function updateNav(view) {
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  const map={home:0,tela1:1,tela2:2,tela3:3};
+  const idx=map[view];
+  if (idx!==undefined) document.querySelectorAll('.nav-tab')[idx]?.classList.add('active');
+}
+
+// ── API ────────────────────────────────────────────────────────
+async function apiFetch(url, opts={}) {
+  try { const r=await fetch(API+url,opts); return r.json(); } catch { return {ok:false,error:'Sem conexão com API'} }
+}
+
+// ── LOAD DATA ──────────────────────────────────────────────────
+async function loadInicial() {
+  // Traços
+  const tr = await apiFetch('/tracos?ativo=1');
+  tracosData = Array.isArray(tr.data)?tr.data:[];
+  const sel = document.getElementById('f-traco');
+  sel.innerHTML = '<option value="">— Selecione o Traço —</option>' +
+    tracosData.map(t=>`<option value="${t.id}">${t.codigo} — ${t.descricao} (C${t.fck})</option>`).join('');
+
+  // Obras
+  const ob = await apiFetch('/obras?limit=50');
+  obrasData = ob.data?.rows||[];
+  const obraSel = document.getElementById('f-obra');
+  obraSel.innerHTML = '<option value="">— Selecione a obra —</option>' +
+    obrasData.map(o=>`<option value="${o.id}">${o.nome}</option>`).join('');
+
+  // Dashboard home
+  await loadHome();
+}
+
+async function loadHome() {
+  const dash = await apiFetch('/dashboard');
+  const d = dash.data||{};
+  // Pegar primeira obra
+  if (obrasData.length>0) {
+    const o = obrasData[0];
+    document.getElementById('home-obra-nome').textContent = o.nome;
+    document.getElementById('home-obra-local').textContent = [o.localidade,o.responsavel].filter(Boolean).join(' • ')||'—';
+    document.getElementById('home-total-pecas').textContent = o.total_pecas_real??o.total_pecas??'—';
+    document.getElementById('home-concretadas').textContent = o.pecas_concretadas??'—';
+    document.getElementById('home-caminhoes').textContent = o.total_caminhoes??'—';
+  }
+  // Registros recentes
+  const cams = await apiFetch('/caminhoes?limit=3');
+  const rows = cams.data?.rows||[];
+  const el = document.getElementById('home-registros');
+  if (rows.length===0) {
+    el.innerHTML='<div style="padding:16px;text-align:center;color:var(--text3);font-size:12px">Nenhum registro ainda</div>';
+    return;
+  }
+  const statusColor={aprovado:'var(--green)',pendente:'var(--amber)',reprovado:'var(--red)'};
+  el.innerHTML = rows.map((c,i)=>`
+    <div style="padding:12px 14px;${i<rows.length-1?'border-bottom:1px solid var(--border)':''};display:flex;align-items:center;gap:12px">
+      <div style="width:8px;height:8px;border-radius:50%;background:${statusColor[c.status]||'var(--text3)'};flex-shrink:0"></div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600;font-family:'IBM Plex Mono',monospace">${c.codigo||'—'}</div>
+        <div style="font-size:11px;color:var(--text3)">${c.traco_codigo?c.traco_codigo+' • ':''}C${c.fck||'?'} • ${c.volume_m3||'?'}m³ ${c.concreto_obra?'• 🏗️ Obra':''}</div>
+      </div>
+      <span class="badge ${c.status==='aprovado'?'badge-green':c.status==='reprovado'?'badge-red':'badge-amber'}" style="font-size:10px">${c.status==='aprovado'?'Aprovado':c.status==='reprovado'?'Reprovado':'Pendente'}</span>
+    </div>`).join('');
+}
+
+// ── TRAÇO ──────────────────────────────────────────────────────
+function onTracoChange(id) {
+  const t = tracosData.find(x=>x.id===id);
+  const det = document.getElementById('traco-detalhe');
+  const specs = document.getElementById('traco-specs');
+  if (!t||!id) { det.style.display='none'; return; }
+  det.style.display='block';
+  const items = [
+    ['FCK', 'C'+t.fck+' MPa'],
+    ['Slump', t.slump_minimo!=null?t.slump_minimo+'–'+t.slump_maximo+' cm':'—'],
+    ['Cimento', t.cimento_kg_m3?t.cimento_kg_m3+' kg/m³':'—'],
+    ['Água', t.agua_litros_m3?t.agua_litros_m3+' L/m³':'—'],
+    ['Areia', t.areia_kg_m3?t.areia_kg_m3+' kg/m³':'—'],
+    ['Brita', t.brita_kg_m3?t.brita_kg_m3+' kg ('+t.brita+')':'—'],
+    ['A/C', t.relacao_agua_cimento||'—'],
+    ['Norma', t.norma||'—'],
+  ];
+  specs.innerHTML = items.map(([l,v])=>`
+    <div style="background:var(--bg2);border-radius:8px;padding:8px">
+      <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px">${l}</div>
+      <div style="font-size:12px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:var(--text)">${v}</div>
+    </div>`).join('');
+  // Preencher FCK automaticamente
+  document.getElementById('f-fck').value = t.fck||25;
+  if (t.slump_minimo!=null) {
+    const proj = (t.slump_minimo+t.slump_maximo)/2;
+    document.getElementById('f-slump').value = proj;
+    document.getElementById('f-tol').value = (t.slump_maximo-t.slump_minimo)/2;
+  }
+}
+
+// ── TOGGLES ────────────────────────────────────────────────────
+function toggleOrigem() {
+  const tog=document.getElementById('toggle-obra');
+  const campos=document.getElementById('campos-obra');
+  const lbl=document.getElementById('origem-label');
+  const on=tog.classList.toggle('on');
+  campos.style.display=on?'block':'none';
+  lbl.textContent=on?'Sim — Concreto preparado na obra':'Não — Concreto usinado (betoneira)';
+}
+function toggleSobrou() {
+  const tog=document.getElementById('toggle-sobrou');
+  const field=document.getElementById('sobrou-field');
+  const lbl=document.getElementById('sobrou-label');
+  const on=tog.classList.toggle('on');
+  field.style.display=on?'block':'none';
+  lbl.textContent=on?'Sim — informar quantidade':'Não';
+}
+
+// ── SLUMP GAUGE ────────────────────────────────────────────────
+function updateSlump(v) {
+  const arc=document.getElementById('slump-arc');
+  const disp=document.getElementById('slump-display');
+  const valEl=document.getElementById('slump-val');
+  const status=document.getElementById('slump-status');
+  const pct=v/25;
+  const circ=188.4;
+  arc.style.strokeDasharray=(circ*pct)+' '+circ;
+  const color = +v<5?'var(--red)':+v>20?'var(--amber)':'var(--green)';
+  arc.style.stroke=color;
+  disp.textContent=v;
+  valEl.textContent=v+' cm';
+  valEl.style.color=color;
+  // Checar slump projetado
+  const proj=+document.getElementById('f-slump').value||0;
+  const tol=+document.getElementById('f-tol').value||2;
+  if (proj>0) {
+    const diff=Math.abs(+v-proj);
+    if (diff<=tol) { status.style.color='var(--green)'; status.textContent='✓ Dentro da tolerância (Δ'+diff.toFixed(1)+'cm)'; }
+    else { status.style.color='var(--red)'; status.textContent='⚠ Fora da tolerância (Δ'+diff.toFixed(1)+'cm)'; }
+  }
+}
+
+// ── PLANTA ────────────────────────────────────────────────────
+function togglePeca(id, el) {
+  const rect=el.querySelector('rect');
+  const text=el.querySelector('text');
+  if (concretasFixas.has(id)) { showToast('Peça já concretada anteriormente'); return; }
+  if (selectedPecas.has(id)) {
+    selectedPecas.delete(id);
+    rect.setAttribute('fill','rgba(255,255,255,.04)');
+    rect.setAttribute('stroke','rgba(255,255,255,.2)');
+    text.setAttribute('fill','var(--text3)');
+  } else {
+    selectedPecas.add(id);
+    rect.setAttribute('fill','rgba(240,165,0,.2)');
+    rect.setAttribute('stroke','var(--amber)');
+    text.setAttribute('fill','var(--amber)');
+  }
+  updatePecasList();
+}
+function updatePecasList() {
+  const count=selectedPecas.size;
+  document.getElementById('sel-count').textContent=count+' selecionadas';
+  const list=document.getElementById('pecas-list');
+  if(count===0){list.innerHTML='<span style="font-style:italic">Nenhuma peça selecionada</span>';return;}
+  list.innerHTML=[...selectedPecas].map(p=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+      <div style="width:8px;height:8px;border-radius:50%;background:${concretasFixas.has(p)?'var(--green)':'var(--amber)'}"></div>
+      <span style="font-weight:600;font-size:13px;font-family:'IBM Plex Mono',monospace">${p.toUpperCase().replace(/([A-Z])([0-9])/,'$1-$2')}</span>
+      <span class="badge ${concretasFixas.has(p)?'badge-green':'badge-amber'}" style="margin-left:auto;font-size:10px">${concretasFixas.has(p)?'Concretada':'Selecionada'}</span>
+    </div>`).join('');
+}
+
+function selectChip(el,group) {
+  el.closest('.chips').querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ── FOTOS / ARQUIVOS ───────────────────────────────────────────
+function addPhoto(type) { showToast('Câmera aberta — '+type); }
+function addArquivo() {
+  const list=document.getElementById('file-list');
+  const item=document.createElement('div');
+  item.className='file-item';
+  const names=['relatorio_abatimento.pdf','nota_fiscal.pdf','laudo_nbr12655.pdf'];
+  const name=names[Math.floor(Math.random()*names.length)];
+  const size=(Math.random()*900+100).toFixed(0)+'KB';
+  item.innerHTML=`<span style="font-size:16px">📄</span><span class="file-item-name">${name}</span><span class="file-size">${size}</span><span style="color:var(--red);cursor:pointer" onclick="removeArquivo(this)">✕</span>`;
+  list.appendChild(item);
+  showToast('Arquivo anexado');
+}
+function removeArquivo(el){el.closest('.file-item').remove()}
+
+// ── SALVAR TELA 1 ──────────────────────────────────────────────
+async function salvarT1() {
+  const obra_id=document.getElementById('f-obra').value;
+  const data_registro=document.getElementById('f-data').value;
+  if (!obra_id) { showToast('Selecione a obra','error'); return; }
+  if (!data_registro) { showToast('Informe a data','error'); return; }
+
+  const body = {
+    obra_id,
+    traco_id: document.getElementById('f-traco').value||null,
+    data_registro,
+    nota_fiscal: document.getElementById('f-nf').value,
+    numero_lacre: document.getElementById('f-lacre').value,
+    fck: +document.getElementById('f-fck').value,
+    slump_projeto: +document.getElementById('f-slump').value||null,
+    slump_obtido: +document.getElementById('slump-range').value,
+    tolerancia: +document.getElementById('f-tol').value||null,
+    volume_m3: +document.getElementById('f-volume').value||null,
+    hr_saida_usina: document.getElementById('f-saida').value,
+    hr_chegada_obra: document.getElementById('f-chegada').value,
+    hr_inicio_aplic: document.getElementById('f-inicio').value,
+    hr_fim_aplic: document.getElementById('f-fim').value,
+    sobrou_concreto: document.getElementById('toggle-sobrou').classList.contains('on'),
+    sobrou_qtd_m3: +document.getElementById('f-sobrou').value||null,
+    concreto_obra: document.getElementById('toggle-obra').classList.contains('on'),
+    responsavel_tecnico: document.getElementById('f-rt').value||null,
+    crea: document.getElementById('f-crea').value||null,
+    temperatura_c: +document.getElementById('f-temp').value||null,
+    observacoes: document.getElementById('f-obs').value,
+  };
+
+  const r = await apiFetch('/caminhoes', {
+    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)
+  });
+  if (r.ok) {
+    caminhaoId = r.data.id;
+    document.getElementById('f-codigo').value = r.data.codigo;
+    showToast('✓ Dados salvos — '+r.data.codigo);
+    setTimeout(()=>goTo('tela2'),800);
+  } else {
+    showToast(r.error||'Erro ao salvar','error');
+  }
+}
+
+// ── SALVAR TELA 2 ──────────────────────────────────────────────
+async function salvarT2() {
+  const obra_id=document.getElementById('f-obra').value;
+  const novas=[...selectedPecas].filter(p=>!concretasFixas.has(p));
+  if (novas.length>0 && obra_id) {
+    const pecas=novas.map(p=>({
+      codigo:p.toUpperCase().replace(/([A-Z])([0-9])/,'$1-$2'),
+      tipo:p.startsWith('p')?'pilar':p.startsWith('v')?'viga':p.startsWith('l')?'laje':'outro',
+      pavimento:document.querySelector('#page-tela2 .chip.active')?.textContent||'Térreo',
+      bloco:document.getElementById('f-bloco')?.value||null,
+      nivel:document.getElementById('f-nivel')?.value||null,
+      descricao:document.getElementById('f-local')?.value||null,
+      status:'concretada'
+    }));
+    await apiFetch('/pecas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({obra_id,caminhao_id:caminhaoId||null,pecas})});
+  }
+  showToast('✓ Peças vinculadas!');
+  setTimeout(()=>goTo('tela3'),800);
+}
+
+// ── FINALIZAR ──────────────────────────────────────────────────
+async function finalizarRegistro() {
+  showToast('✅ Registro finalizado com sucesso!');
+  setTimeout(()=>{
+    navHistory=['home'];
+    document.querySelectorAll('.view').forEach(v=>{v.classList.add('hidden');v.classList.remove('slide-left')});
+    document.getElementById('view-home').classList.remove('hidden');
+    updateNav('home');
+    loadHome();
+    caminhaoId=null;
+  },1200);
+}
+
+// ── TOAST ──────────────────────────────────────────────────────
+function showToast(msg,type='success') {
+  const t=document.getElementById('toast');
+  document.getElementById('toast-msg').textContent=msg;
+  t.className='toast'+(type==='error'?' error':'')+' show';
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// ── INIT ───────────────────────────────────────────────────────
+document.getElementById('f-data').value=new Date().toISOString().split('T')[0];
+updatePecasList();
+updateSlump(10);
+loadInicial();
+</script>
+</body>
+</html>
