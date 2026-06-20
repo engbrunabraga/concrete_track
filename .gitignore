@@ -1,0 +1,4 @@
+node_modules/
+concrete.db
+concrete.db-journal
+*.log
